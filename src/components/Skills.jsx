@@ -44,32 +44,30 @@ export default function Skills() {
           className="grid grid-cols-1 sm:grid-cols-2 gap-6"
         >
           {SKILLS.map((group) => (
-            <motion.div
-              key={group.category}
-              variants={cardVariants}
-              className="skill-neon rounded-2xl border border-border-light dark:border-white/10 bg-white dark:bg-white/5 p-6"
-            >
-              <h3 className="text-base font-bold mb-4 text-black/70 dark:text-white/70 uppercase tracking-wide">
-                {group.category}
-              </h3>
-              <motion.ul
-                variants={itemVariants}
-                className="grid grid-cols-2 gap-x-4 gap-y-3"
-              >
-                {group.items.map((skill) => (
-                  <motion.li
-                    key={skill.name}
-                    variants={chipVariants}
-                    className="group flex items-center gap-2 text-sm"
-                  >
-                    <skill.icon
-                      size={18}
-                      className="text-black/60 dark:text-white/60 shrink-0 transition-all duration-300 ease-out group-hover:text-accent group-hover:rotate-6"
-                    />
-                    <span className="truncate">{skill.name}</span>
-                  </motion.li>
-                ))}
-              </motion.ul>
+            <motion.div key={group.category} variants={cardVariants}>
+              <div className="skill-neon rounded-2xl border border-border-light dark:border-white/10 bg-white dark:bg-white/5 p-6">
+                <h3 className="text-base font-bold mb-4 text-black/70 dark:text-white/70 uppercase tracking-wide">
+                  {group.category}
+                </h3>
+                <motion.ul
+                  variants={itemVariants}
+                  className="grid grid-cols-2 gap-x-4 gap-y-3"
+                >
+                  {group.items.map((skill) => (
+                    <motion.li
+                      key={skill.name}
+                      variants={chipVariants}
+                      className="group flex items-center gap-2 text-sm"
+                    >
+                      <skill.icon
+                        size={18}
+                        className="text-black/60 dark:text-white/60 shrink-0 transition-all duration-300 ease-out group-hover:text-accent group-hover:rotate-6"
+                      />
+                      <span className="truncate">{skill.name}</span>
+                    </motion.li>
+                  ))}
+                </motion.ul>
+              </div>
             </motion.div>
           ))}
         </motion.div>

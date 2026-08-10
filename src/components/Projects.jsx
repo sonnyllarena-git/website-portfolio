@@ -37,55 +37,53 @@ export default function Projects() {
           className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8"
         >
           {PROJECTS.map((project) => (
-            <motion.div
-              key={project.id}
-              variants={cardVariants}
-              className="project-card-neon rounded-2xl bg-white dark:bg-white/5 overflow-hidden flex flex-col"
-            >
-              <div className="h-44 rounded-t-2xl bg-black/10 dark:bg-white/10 overflow-hidden relative">
-                <img
-                  src={project.image}
-                  alt={project.title}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-
-              <div className="p-6 flex flex-col flex-1">
-                <h3 className="text-lg font-bold mb-2">{project.title}</h3>
-                <p className="text-sm text-black/70 dark:text-white/70 mb-4 flex-1">
-                  {project.description}
-                </p>
-
-                <div className="flex flex-wrap gap-2 mb-6">
-                  {project.tech.map((tech) => (
-                    <span
-                      key={tech}
-                      className="text-xs font-medium px-3 py-1 rounded-full bg-black/5 dark:bg-white/10 text-black/70 dark:text-white/70 transition-colors duration-200 ease-in-out hover:bg-accent hover:text-white"
-                    >
-                      {tech}
-                    </span>
-                  ))}
+            <motion.div key={project.id} variants={cardVariants}>
+              <div className="project-card-neon rounded-2xl bg-white dark:bg-white/5 overflow-hidden flex flex-col">
+                <div className="h-44 rounded-t-2xl bg-black/10 dark:bg-white/10 overflow-hidden relative">
+                  <img
+                    src={project.image}
+                    alt={project.title}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
 
-                <div className="flex gap-3">
-                  <a
-                    href={project.github}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn-hover flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full border border-black dark:border-white text-sm font-semibold hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black"
-                  >
-                    <FiExternalLink size={14} />
-                    View
-                  </a>
-                  <a
-                    href={project.github}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn-hover flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-accent text-white text-sm font-semibold hover:bg-accent/90"
-                  >
-                    <FiGithub size={14} />
-                    View Code
-                  </a>
+                <div className="p-6 flex flex-col flex-1">
+                  <h3 className="text-lg font-bold mb-2">{project.title}</h3>
+                  <p className="text-sm text-black/70 dark:text-white/70 mb-4 flex-1">
+                    {project.description}
+                  </p>
+
+                  <div className="flex flex-wrap gap-2 mb-6">
+                    {project.tech.map((tech) => (
+                      <span
+                        key={tech}
+                        className="text-xs font-medium px-3 py-1 rounded-full bg-black/5 dark:bg-white/10 text-black/70 dark:text-white/70 transition-colors duration-200 ease-in-out hover:bg-accent hover:text-white"
+                      >
+                        {tech}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="flex gap-3">
+                    <a
+                      href={project.github}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn-hover flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full border border-black dark:border-white text-sm font-semibold hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black"
+                    >
+                      <FiExternalLink size={14} />
+                      View
+                    </a>
+                    <a
+                      href={project.github}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn-hover flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-accent text-white text-sm font-semibold hover:bg-accent/90"
+                    >
+                      <FiGithub size={14} />
+                      View Code
+                    </a>
+                  </div>
                 </div>
               </div>
             </motion.div>

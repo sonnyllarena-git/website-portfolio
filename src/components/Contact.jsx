@@ -118,125 +118,126 @@ export default function Contact() {
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.6, ease: 'easeOut' }}
-          className="form-neon bg-bg-dark rounded-2xl p-8 md:p-10"
         >
-          <h3 className="text-2xl font-bold text-white mb-6">
-            Send Me A Message
-          </h3>
+          <div className="form-neon bg-bg-dark rounded-2xl p-8 md:p-10">
+            <h3 className="text-2xl font-bold text-white mb-6">
+              Send Me A Message
+            </h3>
 
-          <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-            <div>
-              <input
-                type="text"
-                placeholder="First Name"
-                value={form.name}
-                onChange={handleChange('name')}
-                className={`${inputClass} ${
-                  errors.name ? 'border-red-500 focus:ring-red-500' : ''
-                }`}
-                aria-invalid={Boolean(errors.name)}
-              />
-              {errors.name && (
-                <p className="mt-1.5 text-xs text-red-400">{errors.name}</p>
-              )}
-            </div>
+            <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+              <div>
+                <input
+                  type="text"
+                  placeholder="First Name"
+                  value={form.name}
+                  onChange={handleChange('name')}
+                  className={`${inputClass} ${
+                    errors.name ? 'border-red-500 focus:ring-red-500' : ''
+                  }`}
+                  aria-invalid={Boolean(errors.name)}
+                />
+                {errors.name && (
+                  <p className="mt-1.5 text-xs text-red-400">{errors.name}</p>
+                )}
+              </div>
 
-            <div>
-              <input
-                type="email"
-                placeholder="Email Address"
-                value={form.email}
-                onChange={handleChange('email')}
-                className={`${inputClass} ${
-                  errors.email ? 'border-red-500 focus:ring-red-500' : ''
-                }`}
-                aria-invalid={Boolean(errors.email)}
-              />
-              {errors.email && (
-                <p className="mt-1.5 text-xs text-red-400">{errors.email}</p>
-              )}
-            </div>
+              <div>
+                <input
+                  type="email"
+                  placeholder="Email Address"
+                  value={form.email}
+                  onChange={handleChange('email')}
+                  className={`${inputClass} ${
+                    errors.email ? 'border-red-500 focus:ring-red-500' : ''
+                  }`}
+                  aria-invalid={Boolean(errors.email)}
+                />
+                {errors.email && (
+                  <p className="mt-1.5 text-xs text-red-400">{errors.email}</p>
+                )}
+              </div>
 
-            <div>
-              <input
-                type="text"
-                placeholder="Subject"
-                value={form.subject}
-                onChange={handleChange('subject')}
-                className={`${inputClass} ${
-                  errors.subject ? 'border-red-500 focus:ring-red-500' : ''
-                }`}
-                aria-invalid={Boolean(errors.subject)}
-              />
-              {errors.subject && (
-                <p className="mt-1.5 text-xs text-red-400">{errors.subject}</p>
-              )}
-            </div>
+              <div>
+                <input
+                  type="text"
+                  placeholder="Subject"
+                  value={form.subject}
+                  onChange={handleChange('subject')}
+                  className={`${inputClass} ${
+                    errors.subject ? 'border-red-500 focus:ring-red-500' : ''
+                  }`}
+                  aria-invalid={Boolean(errors.subject)}
+                />
+                {errors.subject && (
+                  <p className="mt-1.5 text-xs text-red-400">{errors.subject}</p>
+                )}
+              </div>
 
-            <div>
-              <textarea
-                placeholder="Message"
-                rows={5}
-                value={form.message}
-                onChange={handleChange('message')}
-                className={`${inputClass} resize-none ${
-                  errors.message ? 'border-red-500 focus:ring-red-500' : ''
-                }`}
-                aria-invalid={Boolean(errors.message)}
-              />
-              {errors.message && (
-                <p className="mt-1.5 text-xs text-red-400">{errors.message}</p>
-              )}
-            </div>
+              <div>
+                <textarea
+                  placeholder="Message"
+                  rows={5}
+                  value={form.message}
+                  onChange={handleChange('message')}
+                  className={`${inputClass} resize-none ${
+                    errors.message ? 'border-red-500 focus:ring-red-500' : ''
+                  }`}
+                  aria-invalid={Boolean(errors.message)}
+                />
+                {errors.message && (
+                  <p className="mt-1.5 text-xs text-red-400">{errors.message}</p>
+                )}
+              </div>
 
-            <button
-              type="submit"
-              disabled={status === 'loading'}
-              className="btn-hover w-full inline-flex items-center justify-center gap-2 bg-accent text-white font-semibold py-3.5 rounded-lg hover:bg-accent/90 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
-            >
-              {status === 'loading' ? (
-                <>
-                  <FiLoader className="animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <FiSend />
-                  Send Message
-                </>
-              )}
-            </button>
+              <button
+                type="submit"
+                disabled={status === 'loading'}
+                className="btn-hover w-full inline-flex items-center justify-center gap-2 bg-accent text-white font-semibold py-3.5 rounded-lg hover:bg-accent/90 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
+              >
+                {status === 'loading' ? (
+                  <>
+                    <FiLoader className="animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <FiSend />
+                    Send Message
+                  </>
+                )}
+              </button>
 
-            <AnimatePresence mode="wait">
-              {status === 'success' && (
-                <motion.div
-                  key="success"
-                  initial={{ opacity: 0, y: -8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.3 }}
-                  className="flex items-center gap-2 text-sm text-green-400 bg-green-500/10 px-4 py-3 rounded-lg"
-                >
-                  <FiCheckCircle />
-                  {statusMessage}
-                </motion.div>
-              )}
+              <AnimatePresence mode="wait">
+                {status === 'success' && (
+                  <motion.div
+                    key="success"
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.3 }}
+                    className="flex items-center gap-2 text-sm text-green-400 bg-green-500/10 px-4 py-3 rounded-lg"
+                  >
+                    <FiCheckCircle />
+                    {statusMessage}
+                  </motion.div>
+                )}
 
-              {status === 'error' && (
-                <motion.div
-                  key="error"
-                  initial={{ opacity: 0, y: -8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.3 }}
-                  className="animate-shake flex items-center gap-2 text-sm text-red-400 bg-red-500/10 px-4 py-3 rounded-lg"
-                >
-                  <FiAlertCircle />
-                  {statusMessage}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </form>
+                {status === 'error' && (
+                  <motion.div
+                    key="error"
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.3 }}
+                    className="animate-shake flex items-center gap-2 text-sm text-red-400 bg-red-500/10 px-4 py-3 rounded-lg"
+                  >
+                    <FiAlertCircle />
+                    {statusMessage}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </form>
+          </div>
         </motion.div>
       </div>
     </section>
