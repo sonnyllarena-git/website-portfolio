@@ -16,14 +16,15 @@ body {
 
 body {
   font-family: 'Inter', system-ui, sans-serif;
-  background-color: #F5F5F5;
+  background: linear-gradient(180deg, #F5F5F5 0%, #E5E5E5 100%);
   color: #000000;
-  transition: background-color 300ms ease-in-out, color 300ms ease-in-out;
+  transition: color 300ms ease-in-out;
   overflow-x: hidden;
+  min-height: 100vh;
 }
 
 html.dark body {
-  background-color: #1A1A1A;
+  background: linear-gradient(180deg, #1A1A1A 0%, #0F0F0F 100%);
   color: #FFFFFF;
 }
 

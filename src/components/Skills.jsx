@@ -3,7 +3,7 @@ import { SKILLS } from '../utils/constants';
 
 const gridVariants = {
   hidden: {},
-  visible: { transition: { staggerChildren: 0.1 } },
+  visible: { transition: { staggerChildren: 0.12 } },
 };
 
 const cardVariants = {
@@ -11,50 +11,68 @@ const cardVariants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } },
 };
 
+const itemVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.04 } },
+};
+
+const chipVariants = {
+  hidden: { opacity: 0, y: 8 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } },
+};
+
 export default function Skills() {
   return (
-    <section id="skills" className="py-24 px-6 bg-black/[0.02] dark:bg-white/[0.02]">
-      <div className="max-w-6xl mx-auto">
+    <section
+      id="skills"
+      className="min-h-[calc(100vh-1px)] flex flex-col justify-center py-24 px-6"
+    >
+      <div className="max-w-5xl mx-auto w-full">
         <motion.h2
           initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.3 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: 'easeOut' }}
-          className="text-4xl md:text-5xl font-black mb-16 text-center"
+          className="text-4xl md:text-5xl font-black mb-10 text-center"
         >
           <span className="text-accent">Skills</span>
         </motion.h2>
 
-        {SKILLS.map((group) => (
-          <div key={group.category} className="mb-12">
-            <h3 className="text-lg font-bold mb-6 text-black/70 dark:text-white/70">
-              {group.category}
-            </h3>
+        <motion.div
+          variants={gridVariants}
+          initial="hidden"
+          animate="visible"
+          className="grid grid-cols-1 sm:grid-cols-2 gap-6"
+        >
+          {SKILLS.map((group) => (
             <motion.div
-              variants={gridVariants}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, amount: 0.2 }}
-              className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5 transition-all duration-400 ease-resize"
+              key={group.category}
+              variants={cardVariants}
+              className="card-hover rounded-2xl border border-border-light dark:border-white/10 bg-white dark:bg-white/5 p-6 hover:border-accent"
             >
-              {group.items.map((skill) => (
-                <motion.div
-                  key={skill.name}
-                  variants={cardVariants}
-                  className="card-hover group flex flex-col items-center gap-3 py-8 px-4 rounded-2xl border border-border-light dark:border-white/10 bg-white dark:bg-white/5 hover:border-accent"
-                >
-                  <skill.icon
-                    size={32}
-                    className="text-black/70 dark:text-white/70 group-hover:text-accent transition-all duration-300 ease-out group-hover:-translate-y-1 group-hover:rotate-6"
-                  />
-                  <span className="text-sm font-medium text-center">
-                    {skill.name}
-                  </span>
-                </motion.div>
-              ))}
+              <h3 className="text-base font-bold mb-4 text-black/70 dark:text-white/70 uppercase tracking-wide">
+                {group.category}
+              </h3>
+              <motion.ul
+                variants={itemVariants}
+                className="grid grid-cols-2 gap-x-4 gap-y-3"
+              >
+                {group.items.map((skill) => (
+                  <motion.li
+                    key={skill.name}
+                    variants={chipVariants}
+                    className="group flex items-center gap-2 text-sm"
+                  >
+                    <skill.icon
+                      size={18}
+                      className="text-black/60 dark:text-white/60 shrink-0 transition-all duration-300 ease-out group-hover:text-accent group-hover:rotate-6"
+                    />
+                    <span className="truncate">{skill.name}</span>
+                  </motion.li>
+                ))}
+              </motion.ul>
             </motion.div>
-          </div>
-        ))}
+          ))}
+        </motion.div>
       </div>
     </section>
   );

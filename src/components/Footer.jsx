@@ -1,11 +1,9 @@
 import { PROFILE, SOCIAL_LINKS, NAV_LINKS } from '../utils/constants';
+import { usePageNav } from '../context/PageContext';
 
 export default function Footer() {
   const year = new Date().getFullYear();
-
-  const scrollTo = (id) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
-  };
+  const { activePage, goToPage } = usePageNav();
 
   return (
     <footer className="border-t border-border-light dark:border-white/10 py-10 px-6">
@@ -18,8 +16,12 @@ export default function Footer() {
           {NAV_LINKS.map((link) => (
             <li key={link.to}>
               <button
-                onClick={() => scrollTo(link.to)}
-                className="link-hover text-sm text-black/70 dark:text-white/70"
+                onClick={() => goToPage(link.to)}
+                className={`link-hover text-sm ${
+                  activePage === link.to
+                    ? 'text-accent'
+                    : 'text-black/70 dark:text-white/70'
+                }`}
               >
                 {link.name}
               </button>

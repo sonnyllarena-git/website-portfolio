@@ -71,8 +71,11 @@ export default function Contact() {
   };
 
   return (
-    <section id="contact" className="py-24 px-6">
-      <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-16">
+    <section
+      id="contact"
+      className="min-h-screen flex items-center py-24 px-6"
+    >
+      <div className="w-full max-w-6xl mx-auto grid md:grid-cols-2 gap-16">
         <motion.div
           initial={{ opacity: 0, x: -30 }}
           whileInView={{ opacity: 1, x: 0 }}

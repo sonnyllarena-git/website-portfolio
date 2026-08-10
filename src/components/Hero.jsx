@@ -2,11 +2,10 @@ import { motion } from 'framer-motion';
 import { FiArrowDown } from 'react-icons/fi';
 import { PROFILE, SOCIAL_LINKS } from '../utils/constants';
 import { CurvedLine, OrangeSquare } from './Decorations';
+import { usePageNav } from '../context/PageContext';
 
 export default function Hero() {
-  const scrollToAbout = () => {
-    document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' });
-  };
+  const { goToPage } = usePageNav();
 
   return (
     <section
@@ -59,7 +58,7 @@ export default function Hero() {
           </p>
 
           <button
-            onClick={scrollToAbout}
+            onClick={() => goToPage('about')}
             className="mt-10 inline-flex items-center gap-2 group text-sm font-semibold"
           >
             <span className="w-11 h-11 rounded-full border border-black dark:border-white flex items-center justify-center group-hover:bg-accent group-hover:border-accent group-hover:text-white group-hover:scale-110 transition-all duration-300 ease-in-out">

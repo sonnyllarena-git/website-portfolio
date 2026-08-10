@@ -3,7 +3,10 @@ import { FiBookOpen } from 'react-icons/fi';
 
 export default function Learning() {
   return (
-    <section id="learning" className="py-24 px-6">
+    <section
+      id="learning"
+      className="min-h-screen flex items-center justify-center py-24 px-6"
+    >
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         whileInView={{ opacity: 1, y: 0 }}

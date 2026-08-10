@@ -14,8 +14,11 @@ const cardVariants = {
 
 export default function Projects() {
   return (
-    <section id="projects" className="py-24 px-6">
-      <div className="max-w-6xl mx-auto">
+    <section
+      id="projects"
+      className="min-h-screen flex flex-col justify-center py-24 px-6"
+    >
+      <div className="w-full max-w-6xl mx-auto">
         <motion.h2
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}

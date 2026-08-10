@@ -2,20 +2,14 @@ import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FiSun, FiMoon, FiMenu, FiX } from 'react-icons/fi';
 import { useTheme } from '../context/ThemeContext';
+import { usePageNav } from '../context/PageContext';
 import { NAV_LINKS } from '../utils/constants';
-
-function scrollToSection(id) {
-  const el = document.getElementById(id);
-  if (el) {
-    el.scrollIntoView({ behavior: 'smooth' });
-  }
-}
 
 export default function Navbar() {
   const { theme, toggleTheme } = useTheme();
+  const { activePage, goToPage } = usePageNav();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState('home');
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -24,30 +18,12 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
-    const sections = NAV_LINKS.map((link) => document.getElementById(link.to)).filter(
-      Boolean
-    );
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries.filter((entry) => entry.isIntersecting);
-        if (visible.length === 0) return;
-
-        const topMost = visible.reduce((a, b) =>
-          a.boundingClientRect.top <= b.boundingClientRect.top ? a : b
-        );
-        setActiveSection(topMost.target.id);
-      },
-      { rootMargin: '-40% 0px -50% 0px', threshold: 0 }
-    );
-
-    sections.forEach((section) => observer.observe(section));
-    return () => observer.disconnect();
-  }, []);
+    setScrolled(window.scrollY > 20);
+  }, [activePage]);
 
   const handleNavClick = (to) => {
     setMenuOpen(false);
-    scrollToSection(to);
+    goToPage(to);
   };
 
   return (
@@ -60,7 +36,7 @@ export default function Navbar() {
         <button
           onClick={() => handleNavClick('home')}
           className="w-10 h-10 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center font-bold text-lg transition-transform duration-300 ease-in-out hover:scale-110"
-          aria-label="Scroll to top"
+          aria-label="Go to home"
         >
           S
         </button>
@@ -71,7 +47,7 @@ export default function Navbar() {
               <button
                 onClick={() => handleNavClick(link.to)}
                 className={`relative text-sm font-medium transition-colors duration-200 ease-in-out hover:text-accent ${
-                  activeSection === link.to
+                  activePage === link.to
                     ? 'text-accent'
                     : 'text-black dark:text-white'
                 }`}
@@ -79,7 +55,7 @@ export default function Navbar() {
                 {link.name}
                 <span
                   className={`absolute -bottom-2 left-0 right-0 h-0.5 bg-accent origin-left transition-transform duration-200 ease-in-out ${
-                    activeSection === link.to
+                    activePage === link.to
                       ? 'scale-x-100'
                       : 'scale-x-0 group-hover:scale-x-100'
                   }`}
@@ -165,7 +141,7 @@ export default function Navbar() {
                   <button
                     onClick={() => handleNavClick(link.to)}
                     className={`text-base font-medium ${
-                      activeSection === link.to
+                      activePage === link.to
                         ? 'text-accent'
                         : 'text-black dark:text-white'
                     }`}
