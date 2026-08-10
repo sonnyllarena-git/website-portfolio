@@ -7,6 +7,7 @@ import { pageVariants } from './components/PageTransition';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import CursorOrb from './components/CursorOrb';
+import OrangePixels from './components/OrangePixels';
 import Hero from './components/Hero';
 import About from './components/About';
 import Skills from './components/Skills';
@@ -54,6 +55,7 @@ function App() {
       <PageNavProvider>
         <BrowserRouter>
           <div className="min-h-screen text-black dark:text-white relative">
+            <OrangePixels />
             <CursorOrb />
             <Navbar />
             <main className="relative h-screen overflow-hidden">

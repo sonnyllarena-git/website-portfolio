@@ -60,7 +60,7 @@ html.dark body {
     transition: transform 300ms ease-in-out, box-shadow 300ms ease-in-out;
   }
   .project-card-neon:hover {
-    transform: scale(1.06);
+    transform: scale(1.03) translateY(-6px);
     box-shadow: 0 0 25px rgba(255, 107, 53, 0.5);
   }
 
