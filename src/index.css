@@ -57,11 +57,11 @@ html.dark body {
     beats this components layer) and never shift layout on hover.
   */
   .project-card-neon {
-    transition: transform 500ms ease-in-out, box-shadow 300ms ease-in-out;
+    transition: transform 300ms ease-in-out, box-shadow 300ms ease-in-out;
   }
   .project-card-neon:hover {
-    transform: scale(1.05) translateY(-8px);
-    box-shadow: 0 0 0 2px #ff6b35, 0 0 25px rgba(255, 107, 53, 0.5);
+    transform: scale(1.06);
+    box-shadow: 0 0 25px rgba(255, 107, 53, 0.5);
   }
 
   .profile-neon {
@@ -69,22 +69,22 @@ html.dark body {
   }
   .profile-neon:hover {
     transform: scale(1.03);
-    box-shadow: 0 0 0 2px #ff6b35, 0 0 20px rgba(255, 107, 53, 0.4);
+    box-shadow: 0 0 20px rgba(255, 107, 53, 0.4);
   }
 
   .skill-neon {
     transition: transform 300ms ease-in-out, box-shadow 300ms ease-in-out;
   }
   .skill-neon:hover {
-    transform: scale(1.02);
-    box-shadow: 0 0 0 2px #ff6b35, 0 0 15px rgba(255, 107, 53, 0.4);
+    transform: scale(1.06);
+    box-shadow: 0 0 20px rgba(255, 107, 53, 0.4);
   }
 
   .form-neon {
     transition: box-shadow 300ms ease-in-out;
   }
   .form-neon:hover {
-    box-shadow: 0 0 0 2px #ff6b35, 0 0 20px rgba(255, 107, 53, 0.4);
+    box-shadow: 0 0 20px rgba(255, 107, 53, 0.4);
   }
 }
 

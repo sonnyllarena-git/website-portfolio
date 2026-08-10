@@ -1,12 +1,8 @@
 import { motion } from 'framer-motion';
-import { FiArrowDown } from 'react-icons/fi';
 import { PROFILE, SOCIAL_LINKS } from '../utils/constants';
 import { CurvedLine, OrangeSquare } from './Decorations';
-import { usePageNav } from '../context/PageContext';
 
 export default function Hero() {
-  const { goToPage } = usePageNav();
-
   return (
     <section
       id="home"
@@ -56,22 +52,6 @@ export default function Hero() {
           <p className="text-lg md:text-xl text-black/70 dark:text-white/70 max-w-md">
             {PROFILE.title}
           </p>
-
-          <button
-            onClick={() => goToPage('about')}
-            className="mt-10 inline-flex items-center gap-2 group text-sm font-semibold"
-          >
-            <span className="w-11 h-11 rounded-full border border-black dark:border-white flex items-center justify-center group-hover:bg-accent group-hover:border-accent group-hover:text-white group-hover:scale-110 transition-all duration-300 ease-in-out">
-              <motion.span
-                animate={{ y: [0, 4, 0] }}
-                transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
-                className="flex"
-              >
-                <FiArrowDown />
-              </motion.span>
-            </span>
-            Scroll Down
-          </button>
         </motion.div>
 
         <motion.div
