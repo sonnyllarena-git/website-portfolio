@@ -1,0 +1,70 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  scroll-behavior: smooth;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: #F5F5F5;
+  color: #000000;
+  transition: background-color 300ms ease-in-out, color 300ms ease-in-out;
+  overflow-x: hidden;
+}
+
+html.dark body {
+  background-color: #1A1A1A;
+  color: #FFFFFF;
+}
+
+@layer base {
+  * {
+    @apply transition-colors duration-300 ease-in-out;
+  }
+}
+
+@layer components {
+  .btn-hover {
+    @apply transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-lg;
+  }
+
+  .card-hover {
+    @apply transition-all duration-300 ease-out hover:scale-102 hover:shadow-xl hover:-translate-y-1;
+  }
+
+  .link-hover {
+    @apply relative pb-1 transition-colors duration-200 hover:text-accent;
+  }
+
+  .form-input-focus {
+    @apply focus:ring-2 focus:ring-accent focus:border-accent transition-all duration-200;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #FF6B35;
+  border-radius: 8px;
+}
+
+.section-heading {
+  position: relative;
+  display: inline-block;
+}
