@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FiSend, FiLoader, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
 import { SOCIAL_LINKS } from '../utils/constants';
@@ -37,6 +37,19 @@ export default function Contact() {
   const [errors, setErrors] = useState({});
   const [status, setStatus] = useState('idle');
   const [statusMessage, setStatusMessage] = useState('');
+
+  useEffect(() => {
+    try {
+      const draft = sessionStorage.getItem('chatContactDraft');
+      if (draft) {
+        const parsed = JSON.parse(draft);
+        setForm((prev) => ({ ...prev, ...parsed }));
+        sessionStorage.removeItem('chatContactDraft');
+      }
+    } catch {
+      // sessionStorage may be unavailable (private mode) — form just stays blank
+    }
+  }, []);
 
   const handleChange = (field) => (e) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));

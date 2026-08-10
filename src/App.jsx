@@ -14,6 +14,7 @@ import Skills from './components/Skills';
 import Projects from './components/Projects';
 import Learning from './components/Learning';
 import Contact from './components/Contact';
+import Chatbot from './components/chat/Chatbot';
 
 const PAGES = {
   home: Hero,
@@ -64,6 +65,7 @@ function App() {
               </Routes>
             </main>
             <Footer />
+            <Chatbot />
           </div>
         </BrowserRouter>
       </PageNavProvider>

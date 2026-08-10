@@ -87,6 +87,21 @@ html.dark body {
     transform: scale(1.03);
     box-shadow: 0 0 20px rgba(255, 107, 53, 0.4);
   }
+
+  .chat-button-hover {
+    background: linear-gradient(135deg, #FF6B35 0%, #E85A1F 100%);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+    transition: transform 300ms ease-in-out, box-shadow 300ms ease-in-out;
+  }
+  .chat-button-hover:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 24px rgba(255, 107, 53, 0.6);
+  }
+
+  .chat-window-glow {
+    border: 1px solid rgba(255, 107, 53, 0.4);
+    box-shadow: 0 0 30px rgba(255, 107, 53, 0.15), 0 20px 40px rgba(0, 0, 0, 0.15);
+  }
 }
 
 ::-webkit-scrollbar {
