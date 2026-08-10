@@ -102,6 +102,38 @@ html.dark body {
     border: 1px solid rgba(255, 107, 53, 0.4);
     box-shadow: 0 0 30px rgba(255, 107, 53, 0.15), 0 20px 40px rgba(0, 0, 0, 0.15);
   }
+
+  .mic-recording {
+    animation: mic-pulse 1.2s ease-in-out infinite;
+  }
+
+  .listening-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: #FF6B35;
+    display: inline-block;
+    animation: listening-blink 1s ease-in-out infinite;
+  }
+
+  .speaker-playing {
+    animation: speaker-pulse 1s ease-in-out infinite;
+  }
+}
+
+@keyframes mic-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+  50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+}
+
+@keyframes listening-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@keyframes speaker-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 ::-webkit-scrollbar {

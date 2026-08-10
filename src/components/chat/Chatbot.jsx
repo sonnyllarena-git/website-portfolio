@@ -11,6 +11,10 @@ import {
   saveUnansweredQuestions,
   sendChatTranscript,
 } from '../../utils/chatService';
+import { loadVoicePrefs, saveVoicePrefs } from '../../utils/voicePrefs';
+import { stripMarkdown } from '../../utils/textFormat';
+import { useSpeechRecognition, RECOGNITION_ERROR_MESSAGES } from '../../hooks/useSpeechRecognition';
+import { useSpeechSynthesis } from '../../hooks/useSpeechSynthesis';
 import ChatButton from './ChatButton';
 import ChatWindow from './ChatWindow';
 
@@ -46,6 +50,12 @@ export default function Chatbot() {
   const [transcriptStatus, setTranscriptStatus] = useState('idle');
   const [transcriptError, setTranscriptError] = useState('');
 
+  const [voicePrefs, setVoicePrefs] = useState(loadVoicePrefs);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [voiceError, setVoiceError] = useState('');
+  const [isTestingMic, setIsTestingMic] = useState(false);
+  const [micTestResult, setMicTestResult] = useState('');
+
   const startedAtRef = useRef(null);
   const endedAtRef = useRef(null);
   const warningTimerRef = useRef(null);
@@ -74,6 +84,97 @@ export default function Chatbot() {
       clearTimeout(closeTimerRef.current);
     };
   }, []);
+
+  const handleFinalTranscript = (transcript) => {
+    const trimmed = transcript.trim();
+    if (!trimmed) return;
+
+    if (isTestingMic) {
+      setMicTestResult(trimmed);
+      return;
+    }
+
+    setInput((prev) => (prev.trim() ? `${prev.trim()} ${trimmed}` : trimmed));
+  };
+
+  const handleRecognitionError = (error) => {
+    setVoiceError(RECOGNITION_ERROR_MESSAGES[error] || 'Microphone error');
+    setTimeout(() => setVoiceError(''), 4000);
+  };
+
+  const recognition = useSpeechRecognition({
+    language: voicePrefs.language,
+    onFinalResult: handleFinalTranscript,
+    onError: handleRecognitionError,
+  });
+
+  const synthesis = useSpeechSynthesis({
+    language: voicePrefs.language,
+    rate: voicePrefs.rate,
+    volume: voicePrefs.volume,
+  });
+
+  useEffect(() => {
+    saveVoicePrefs(voicePrefs);
+  }, [voicePrefs]);
+
+  const handleVoicePrefsChange = (partial) => {
+    setVoicePrefs((prev) => ({ ...prev, ...partial }));
+  };
+
+  const handleToggleListening = () => {
+    setIsTestingMic(false);
+    recognition.toggleListening();
+  };
+
+  const handleTestMicrophone = () => {
+    setMicTestResult('');
+    setIsTestingMic(true);
+    recognition.toggleListening();
+  };
+
+  const handleToggleSettings = () => {
+    setIsSettingsOpen((prev) => !prev);
+    setIsTestingMic(false);
+  };
+
+  const handleToggleSpeak = (message) => {
+    if (synthesis.speakingId === message.id) {
+      synthesis.stop();
+    } else {
+      synthesis.speak(stripMarkdown(message.content), message.id);
+    }
+  };
+
+  useEffect(() => {
+    if (!isOpen || ended) return;
+
+    const handleKeyDown = (e) => {
+      const tag = document.activeElement?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+      const key = e.key.toLowerCase();
+      if (key === 'm' && voicePrefs.voiceInputEnabled && recognition.isSupported) {
+        e.preventDefault();
+        handleToggleListening();
+      } else if (key === 's' && voicePrefs.voiceOutputEnabled && synthesis.isSupported) {
+        e.preventDefault();
+        const lastBot = [...messagesRef.current].reverse().find((m) => m.role === 'bot');
+        if (lastBot) handleToggleSpeak(lastBot);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    isOpen,
+    ended,
+    voicePrefs.voiceInputEnabled,
+    voicePrefs.voiceOutputEnabled,
+    recognition.isSupported,
+    synthesis.isSupported,
+  ]);
 
   const appendMessage = (msg) => setMessages((prev) => [...prev, msg]);
 
@@ -132,6 +233,8 @@ export default function Chatbot() {
   const requestEnd = (reason) => {
     clearTimeout(warningTimerRef.current);
     clearTimeout(closeTimerRef.current);
+    recognition.stopListening();
+    synthesis.stop();
 
     if (messagesRef.current.length <= 1) {
       setIsOpen(false);
@@ -259,6 +362,10 @@ export default function Chatbot() {
     hasRequestedContactRef.current = false;
     startedAtRef.current = null;
     endedAtRef.current = null;
+    setIsSettingsOpen(false);
+    setIsTestingMic(false);
+    setMicTestResult('');
+    setVoiceError('');
   };
 
   return (
@@ -284,6 +391,21 @@ export default function Chatbot() {
             onSendCopy={handleSendCopy}
             onDone={handleDone}
             scrollRef={scrollRef}
+            isSettingsOpen={isSettingsOpen}
+            onToggleSettings={handleToggleSettings}
+            voicePrefs={voicePrefs}
+            onVoicePrefsChange={handleVoicePrefsChange}
+            recognitionSupported={recognition.isSupported}
+            synthesisSupported={synthesis.isSupported}
+            isListening={recognition.isListening}
+            interimText={recognition.interimText}
+            onToggleListening={handleToggleListening}
+            voiceError={voiceError}
+            speakingMessageId={synthesis.speakingId}
+            onToggleSpeak={handleToggleSpeak}
+            isTestingMic={isTestingMic}
+            micTestResult={micTestResult}
+            onTestMicrophone={handleTestMicrophone}
           />
         )}
       </AnimatePresence>

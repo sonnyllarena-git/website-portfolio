@@ -6,8 +6,13 @@ import {
   FiLoader,
   FiCheckCircle,
   FiAlertCircle,
+  FiSettings,
+  FiMic,
+  FiVolume2,
+  FiSquare,
 } from 'react-icons/fi';
 import ChatMessageText from './ChatMessageText';
+import VoiceSettingsPanel from './VoiceSettingsPanel';
 
 function formatTime(date) {
   return date.toLocaleTimeString(undefined, {
@@ -32,8 +37,17 @@ function TypingIndicator() {
   );
 }
 
-function MessageBubble({ message, onSuggestionClick, onCtaClick }) {
+function MessageBubble({
+  message,
+  onSuggestionClick,
+  onCtaClick,
+  voiceOutputEnabled,
+  synthesisSupported,
+  speakingMessageId,
+  onToggleSpeak,
+}) {
   const isGuest = message.role === 'guest';
+  const isSpeaking = speakingMessageId === message.id;
 
   return (
     <div className={`flex ${isGuest ? 'justify-end' : 'justify-start'}`}>
@@ -49,6 +63,20 @@ function MessageBubble({ message, onSuggestionClick, onCtaClick }) {
         >
           <ChatMessageText text={message.content} />
         </div>
+
+        {!isGuest && !message.isSystem && voiceOutputEnabled && synthesisSupported && (
+          <button
+            type="button"
+            onClick={() => onToggleSpeak(message)}
+            aria-label={isSpeaking ? 'Stop audio' : 'Play audio'}
+            title={isSpeaking ? 'Stop audio' : 'Play audio'}
+            className={`speaker-button mt-1 w-6 h-6 flex items-center justify-center rounded-full text-accent hover:bg-accent/10 transition-all duration-200 ease-in-out hover:scale-110 ${
+              isSpeaking ? 'speaker-playing' : ''
+            }`}
+          >
+            {isSpeaking ? <FiSquare size={11} /> : <FiVolume2 size={13} />}
+          </button>
+        )}
 
         {message.cta && (
           <button
@@ -164,6 +192,21 @@ export default function ChatWindow({
   onSendCopy,
   onDone,
   scrollRef,
+  isSettingsOpen,
+  onToggleSettings,
+  voicePrefs,
+  onVoicePrefsChange,
+  recognitionSupported,
+  synthesisSupported,
+  isListening,
+  interimText,
+  onToggleListening,
+  voiceError,
+  speakingMessageId,
+  onToggleSpeak,
+  isTestingMic,
+  micTestResult,
+  onTestMicrophone,
 }) {
   return (
     <motion.div
@@ -175,16 +218,32 @@ export default function ChatWindow({
     >
       <div className="flex items-center justify-between px-4 py-3 bg-accent text-white shrink-0">
         <div>
-          <p className="font-bold text-sm">Sonny&apos;s Assistant</p>
-          <p className="text-[11px] text-white/80">Usually replies instantly</p>
+          <p className="font-bold text-sm">
+            {isSettingsOpen ? 'Voice Settings' : "Sonny's Assistant"}
+          </p>
+          <p className="text-[11px] text-white/80">
+            {isSettingsOpen ? 'Speak, listen, customize' : 'Usually replies instantly'}
+          </p>
         </div>
-        <button
-          onClick={ended ? onDone : onClose}
-          aria-label="Close chat"
-          className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors duration-200 ease-in-out"
-        >
-          <FiX size={18} />
-        </button>
+        <div className="flex items-center gap-1">
+          {!ended && (
+            <button
+              onClick={onToggleSettings}
+              aria-label={isSettingsOpen ? 'Close voice settings' : 'Voice settings'}
+              title="Voice settings"
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors duration-200 ease-in-out"
+            >
+              <FiSettings size={16} />
+            </button>
+          )}
+          <button
+            onClick={ended ? onDone : onClose}
+            aria-label="Close chat"
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors duration-200 ease-in-out"
+          >
+            <FiX size={18} />
+          </button>
+        </div>
       </div>
 
       {ended ? (
@@ -197,6 +256,17 @@ export default function ChatWindow({
           onSendCopy={onSendCopy}
           onDone={onDone}
         />
+      ) : isSettingsOpen ? (
+        <VoiceSettingsPanel
+          prefs={voicePrefs}
+          onChange={onVoicePrefsChange}
+          recognitionSupported={recognitionSupported}
+          synthesisSupported={synthesisSupported}
+          onTestMicrophone={onTestMicrophone}
+          isTestingMic={isTestingMic}
+          isListening={isListening}
+          micTestResult={micTestResult}
+        />
       ) : (
         <>
           <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
@@ -206,31 +276,72 @@ export default function ChatWindow({
                 message={message}
                 onSuggestionClick={onSuggestionClick}
                 onCtaClick={onCtaClick}
+                voiceOutputEnabled={voicePrefs.voiceOutputEnabled}
+                synthesisSupported={synthesisSupported}
+                speakingMessageId={speakingMessageId}
+                onToggleSpeak={onToggleSpeak}
               />
             ))}
             {isTyping && <TypingIndicator />}
           </div>
 
-          <form
-            onSubmit={onSubmit}
-            className="flex items-center gap-2 p-3 border-t border-black/10 dark:border-white/10 shrink-0"
-          >
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => onInputChange(e.target.value)}
-              placeholder="Ask me anything..."
-              className="form-input-focus flex-1 text-sm px-3.5 py-2.5 rounded-full bg-black/5 dark:bg-white/10 outline-none"
-            />
-            <button
-              type="submit"
-              disabled={!input.trim()}
-              aria-label="Send message"
-              className="btn-hover shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-accent text-white disabled:opacity-60 disabled:hover:scale-100"
-            >
-              <FiSend size={16} />
-            </button>
-          </form>
+          <div className="border-t border-black/10 dark:border-white/10 shrink-0 px-3 pt-2 pb-3 space-y-1.5">
+            {isListening && (
+              <p className="text-xs text-accent font-medium flex items-center gap-1.5 px-1">
+                <span className="listening-dot" /> Listening...
+              </p>
+            )}
+            {interimText && (
+              <p className="text-xs italic text-black/50 dark:text-white/50 px-1 truncate">
+                {interimText}
+              </p>
+            )}
+            {voiceError && (
+              <p className="text-xs text-red-400 flex items-center gap-1 px-1">
+                <FiAlertCircle size={12} /> {voiceError}
+              </p>
+            )}
+
+            <form onSubmit={onSubmit} className="flex items-center gap-2">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => onInputChange(e.target.value)}
+                placeholder="Ask me anything..."
+                className="form-input-focus flex-1 text-sm px-3.5 py-2.5 rounded-full bg-black/5 dark:bg-white/10 outline-none"
+              />
+              {voicePrefs.voiceInputEnabled && (
+                <button
+                  type="button"
+                  onClick={onToggleListening}
+                  disabled={!recognitionSupported}
+                  aria-label={isListening ? 'Stop recording' : 'Start voice input'}
+                  title={
+                    recognitionSupported
+                      ? isListening
+                        ? 'Stop recording'
+                        : 'Click to speak your question'
+                      : 'Voice input not supported in this browser'
+                  }
+                  className={`mic-button shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-all duration-200 ease-in-out hover:scale-110 disabled:opacity-40 disabled:hover:scale-100 ${
+                    isListening
+                      ? 'mic-recording bg-red-500 text-white'
+                      : 'bg-accent/10 text-accent'
+                  }`}
+                >
+                  <FiMic size={16} />
+                </button>
+              )}
+              <button
+                type="submit"
+                disabled={!input.trim()}
+                aria-label="Send message"
+                className="btn-hover shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-accent text-white disabled:opacity-60 disabled:hover:scale-100"
+              >
+                <FiSend size={16} />
+              </button>
+            </form>
+          </div>
         </>
       )}
     </motion.div>
