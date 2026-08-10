@@ -40,13 +40,13 @@ export default function Projects() {
             <motion.div
               key={project.id}
               variants={cardVariants}
-              className="project-card-neon group rounded-2xl bg-white dark:bg-white/5 overflow-hidden flex flex-col"
+              className="project-card-neon rounded-2xl bg-white dark:bg-white/5 overflow-hidden flex flex-col"
             >
               <div className="h-44 rounded-t-2xl bg-black/10 dark:bg-white/10 overflow-hidden relative">
                 <img
                   src={project.image}
                   alt={project.title}
-                  className="w-full h-full object-cover transition-transform duration-400 ease-out group-hover:scale-108"
+                  className="w-full h-full object-cover"
                 />
               </div>
 
