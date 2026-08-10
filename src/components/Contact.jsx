@@ -118,7 +118,7 @@ export default function Contact() {
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.6, ease: 'easeOut' }}
-          className="bg-bg-dark rounded-2xl p-8 md:p-10"
+          className="form-neon bg-bg-dark rounded-2xl p-8 md:p-10"
         >
           <h3 className="text-2xl font-bold text-white mb-6">
             Send Me A Message

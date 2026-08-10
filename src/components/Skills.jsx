@@ -47,7 +47,7 @@ export default function Skills() {
             <motion.div
               key={group.category}
               variants={cardVariants}
-              className="card-hover rounded-2xl border border-border-light dark:border-white/10 bg-white dark:bg-white/5 p-6 hover:border-accent"
+              className="skill-neon rounded-2xl border border-border-light dark:border-white/10 bg-white dark:bg-white/5 p-6"
             >
               <h3 className="text-base font-bold mb-4 text-black/70 dark:text-white/70 uppercase tracking-wide">
                 {group.category}

@@ -40,12 +40,14 @@ export default function Projects() {
             <motion.div
               key={project.id}
               variants={cardVariants}
-              className="card-hover group rounded-2xl border border-border-light dark:border-white/10 bg-white dark:bg-white/5 overflow-hidden flex flex-col"
+              className="project-card-neon group rounded-2xl bg-white dark:bg-white/5 overflow-hidden flex flex-col"
             >
-              <div className="h-44 bg-black/10 dark:bg-white/10 overflow-hidden relative">
-                <div className="w-full h-full flex items-center justify-center text-black/30 dark:text-white/30 text-sm transition-transform duration-400 ease-out group-hover:scale-108">
-                  Project Preview
-                </div>
+              <div className="h-44 rounded-t-2xl bg-black/10 dark:bg-white/10 overflow-hidden relative">
+                <img
+                  src={project.image}
+                  alt={project.title}
+                  className="w-full h-full object-cover transition-transform duration-400 ease-out group-hover:scale-108"
+                />
               </div>
 
               <div className="p-6 flex flex-col flex-1">

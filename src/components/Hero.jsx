@@ -80,7 +80,7 @@ export default function Hero() {
           transition={{ duration: 0.7, delay: 0.15 }}
           className="relative justify-self-center"
         >
-          <div className="w-64 h-64 md:w-80 md:h-80 border-2 border-black dark:border-white rounded-2xl bg-white/40 dark:bg-white/5 flex items-center justify-center relative overflow-hidden transition-transform duration-400 ease-out hover:scale-105">
+          <div className="profile-neon w-64 h-64 md:w-80 md:h-80 border-2 border-black dark:border-white rounded-2xl bg-white/40 dark:bg-white/5 flex items-center justify-center relative overflow-hidden">
             <span className="text-black/30 dark:text-white/30 text-sm">
               Profile Photo
             </span>

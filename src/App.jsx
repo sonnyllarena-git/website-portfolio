@@ -40,7 +40,7 @@ function AnimatedPages() {
         initial="initial"
         animate="animate"
         exit="exit"
-        className="absolute inset-0 overflow-y-auto"
+        className="absolute inset-0 overflow-y-auto pb-10"
       >
         <PageComponent />
       </motion.div>

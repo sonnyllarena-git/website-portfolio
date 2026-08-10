@@ -25,6 +25,10 @@ import {
 } from 'react-icons/si';
 import { VscVscode } from 'react-icons/vsc';
 import { FaDatabase, FaVideo, FaCamera, FaPencilRuler } from 'react-icons/fa';
+import restaurantPosImage from '../assets/logo/restaurant-pos.jpg';
+import expenseTrackerImage from '../assets/logo/expense-tracker.jpg';
+import dentalClinicImage from '../assets/logo/dental-clinic.jpg';
+import onboardingAppImage from '../assets/logo/onboarding-app.jpg';
 
 export const PROFILE = {
   name: 'Sonny',
@@ -44,10 +48,10 @@ export const PROFILE = {
 
 export const SOCIAL_LINKS = [
   { name: 'GitHub', icon: FaGithub, url: 'https://github.com/sonnyllarena-git' },
-  { name: 'LinkedIn', icon: FaLinkedin, url: '' },
-  { name: 'YouTube', icon: FaYoutube, url: '' },
-  { name: 'Facebook', icon: FaFacebook, url: '' },
-  { name: 'TikTok', icon: FaTiktok, url: '' },
+  { name: 'LinkedIn', icon: FaLinkedin, url: 'https://www.linkedin.com/in/sonny-llarena-a8956130b/' },
+  { name: 'YouTube', icon: FaYoutube, url: 'https://www.youtube.com/@llarenachannel' },
+  { name: 'Facebook', icon: FaFacebook, url: 'https://www.facebook.com/profile.php?id=100045247046713' },
+  { name: 'TikTok', icon: FaTiktok, url: 'https://www.tiktok.com/@llarenachannel' },
 ];
 
 export const NAV_LINKS = [
@@ -67,6 +71,7 @@ export const PROJECTS = [
       'Local desktop POS system for Philippine restaurants — cash-first, minimalist design. Phase 1 covers ordering, inventory, reports, and kitchen display.',
     github: 'https://github.com/sonnyllarena-git/restaurant-pos-system-app',
     tech: ['React', 'Electron', 'SQLite', 'Node.js'],
+    image: restaurantPosImage,
   },
   {
     id: 2,
@@ -75,6 +80,7 @@ export const PROJECTS = [
       'Mobile expense tracker with budgets, recurring expenses, receipt photos, and spending analytics. Offline-first — all data stored locally on device.',
     github: 'https://github.com/sonnyllarena-git/expenses-tracker-app',
     tech: ['React Native', 'Expo Router', 'Drizzle ORM', 'SQLite'],
+    image: expenseTrackerImage,
   },
   {
     id: 3,
@@ -83,12 +89,14 @@ export const PROJECTS = [
       'Production-grade dental practice management system covering patient records, scheduling, treatment planning, billing, inventory, and analytics.',
     github: 'https://github.com/sonnyllarena-git/dental-clinic-crm',
     tech: ['React', 'Node.js', 'PostgreSQL', 'Stripe'],
+    image: dentalClinicImage,
   },
   {
     id: 4,
     title: 'Onboarding App',
     description:
       'Employee Onboarding/Offboarding Portal — an enterprise platform built from zero to production with real-time platform syncing, a 99.9% uptime SLA, and self-service error recovery.',
+    image: onboardingAppImage,
     github: 'https://github.com/sonnyllarena-git/tcp-onboarding-app',
     tech: ['React', 'Node.js', 'PostgreSQL', 'Real-time APIs'],
   },
