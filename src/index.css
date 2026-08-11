@@ -153,6 +153,10 @@ html.dark body {
   .speaker-playing {
     animation: speaker-pulse 1s ease-in-out infinite;
   }
+
+  .status-pulse-ring {
+    animation: status-pulse 2s ease-out infinite;
+  }
 }
 
 @keyframes mic-pulse {
@@ -168,6 +172,12 @@ html.dark body {
 @keyframes speaker-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
+}
+
+@keyframes status-pulse {
+  0% { width: 12px; height: 12px; opacity: 0.9; border-width: 2px; }
+  50% { width: 30px; height: 30px; opacity: 0.5; border-width: 1.5px; }
+  100% { width: 48px; height: 48px; opacity: 0; border-width: 1px; }
 }
 
 @keyframes skill-marquee-scroll {

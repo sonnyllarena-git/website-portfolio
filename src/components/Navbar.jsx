@@ -4,6 +4,7 @@ import { FiSun, FiMoon, FiMenu, FiX } from 'react-icons/fi';
 import { useTheme } from '../context/ThemeContext';
 import { usePageNav } from '../context/PageContext';
 import { NAV_LINKS } from '../utils/constants';
+import AvailableForWorkBadge from './AvailableForWorkBadge';
 
 export default function Navbar() {
   const { theme, toggleTheme } = useTheme();
@@ -87,6 +88,7 @@ export default function Navbar() {
           >
             Contact Me
           </button>
+          <AvailableForWorkBadge />
         </div>
 
         <div className="flex items-center gap-3 md:hidden">
@@ -150,13 +152,14 @@ export default function Navbar() {
                   </button>
                 </li>
               ))}
-              <li>
+              <li className="flex items-center gap-3">
                 <button
                   onClick={() => handleNavClick('contact')}
-                  className="btn-hover w-full px-5 py-2.5 bg-black border border-black text-white text-sm font-semibold rounded-full"
+                  className="btn-hover flex-1 px-5 py-2.5 bg-black border border-black text-white text-sm font-semibold rounded-full"
                 >
                   Contact Me
                 </button>
+                <AvailableForWorkBadge />
               </li>
             </ul>
           </motion.div>
