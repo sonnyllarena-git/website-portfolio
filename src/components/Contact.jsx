@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { FiSend, FiLoader, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
 import { SOCIAL_LINKS } from '../utils/constants';
 import { sendContactMessage } from '../utils/email';
+import RevealEmailButton from './RevealEmailButton';
 
 const initialForm = { name: '', email: '', subject: '', message: '' };
 
@@ -122,6 +123,8 @@ export default function Contact() {
               </a>
             ))}
           </div>
+
+          <RevealEmailButton />
         </motion.div>
 
         <motion.div
@@ -139,7 +142,7 @@ export default function Contact() {
               <div>
                 <input
                   type="text"
-                  placeholder="First Name"
+                  placeholder="Full Name"
                   value={form.name}
                   onChange={handleChange('name')}
                   className={`${inputClass} ${
@@ -155,7 +158,7 @@ export default function Contact() {
               <div>
                 <input
                   type="email"
-                  placeholder="Email Address"
+                  placeholder="Your Email Address"
                   value={form.email}
                   onChange={handleChange('email')}
                   className={`${inputClass} ${
