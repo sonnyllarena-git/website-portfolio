@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { usePageNav } from '../context/PageContext';
 
 const SIZES = [2, 4, 8, 12, 15];
 const BLURS = [0, 5, 15];
@@ -16,7 +17,17 @@ function generatePixels() {
 }
 
 export default function OrangePixels() {
-  const [pixels] = useState(generatePixels);
+  const { activePage } = usePageNav();
+  const [pixels, setPixels] = useState(generatePixels);
+  const isFirstRender = useRef(true);
+
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    setPixels(generatePixels());
+  }, [activePage]);
 
   return (
     <div aria-hidden="true" className="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
