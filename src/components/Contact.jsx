@@ -100,12 +100,10 @@ export default function Contact() {
           </h2>
 
           <p className="text-black/70 dark:text-white/70 leading-relaxed mb-4">
-            I will read all emails. Send me any message you want and I'll get
-            back to you.
+            I read every email and will get back to you within 24 hours.
           </p>
           <p className="text-sm text-black/50 dark:text-white/50 mb-10">
-            I need your Name and Email Address, but you won't receive anything
-            other than your reply.
+            Just leave your name and email address—I’ll only use it to reply to your message, with no spam ever.
           </p>
 
           <div className="w-24 h-1.5 bg-accent rounded-full mb-10" />

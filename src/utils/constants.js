@@ -22,6 +22,7 @@ import {
   SiDocker,
   SiSqlite,
   SiFigma,
+  SiN8N,
 } from 'react-icons/si';
 import { VscVscode } from 'react-icons/vsc';
 import { FaDatabase, FaVideo, FaCamera, FaPencilRuler } from 'react-icons/fa';
@@ -32,11 +33,11 @@ import onboardingAppImage from '../assets/logo/onboarding-app.jpg';
 
 export const PROFILE = {
   name: 'Sonny',
-  title: 'Full Stack Developer, IT Specialist, Social Media Manager',
+  title: 'Full Stack Developer, IT Specialist, Automations, Social Media Manager',
   email: 'sonnyl@thecreditpros.com',
   github: 'https://github.com/sonnyllarena-git',
   bio:
-    "I'm a full stack developer and IT specialist at The Credit Pros, where I build production software, keep systems running, and manage the tools that power the business day to day. Outside of engineering, I create and manage content across social platforms, blending technical precision with a creative eye. I care about building things that are fast, dependable, and genuinely useful — whether that's a line of code, a piece of infrastructure, or a piece of content.",
+    "As a full-stack developer and IT specialist, I design production software, automate complex business processes, and maintain the infrastructure that powers daily operations. Beyond engineering, I produce and manage social content with a mix of technical rigor and creative direction. My goal is simple: create fast, reliable, and high-impact solutions—from smart automations and clean code to engaging media.",
   skillsAreList: [
     'React & React Native',
     'Node.js & Express',
@@ -77,7 +78,7 @@ export const PROJECTS = [
     id: 2,
     title: 'Expense Tracker Mobile App',
     description:
-      'Mobile expense tracker with budgets, recurring expenses, receipt photos, and spending analytics. Offline-first — all data stored locally on device.',
+      'Mobile expense tracker with budgets, recurring expenses, receipt photos, and spending analytics.',
     github: 'https://github.com/sonnyllarena-git/expenses-tracker-app',
     tech: ['React Native', 'Expo Router', 'Drizzle ORM', 'SQLite'],
     image: expenseTrackerImage,
@@ -135,6 +136,7 @@ export const SKILLS = [
       { name: 'SQLite', icon: SiSqlite },
       { name: 'VS Code', icon: VscVscode },
       { name: 'Figma', icon: SiFigma },
+      { name: 'N8N', icon: SiN8N },
     ],
   },
   {
