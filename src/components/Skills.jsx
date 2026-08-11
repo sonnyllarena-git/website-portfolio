@@ -11,16 +11,6 @@ const cardVariants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } },
 };
 
-const itemVariants = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.04 } },
-};
-
-const chipVariants = {
-  hidden: { opacity: 0, y: 8 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } },
-};
-
 export default function Skills() {
   return (
     <section
@@ -45,28 +35,31 @@ export default function Skills() {
         >
           {SKILLS.map((group) => (
             <motion.div key={group.category} variants={cardVariants}>
-              <div className="skill-neon rounded-2xl border border-border-light dark:border-white/10 bg-white dark:bg-white/5 p-6">
-                <h3 className="text-base font-bold mb-4 text-black/70 dark:text-white/70 uppercase tracking-wide">
+              <div className="skill-neon h-48 flex flex-col rounded-2xl border border-border-light dark:border-white/10 bg-white dark:bg-white/5 p-6">
+                <h3 className="text-base font-bold text-center text-black/70 dark:text-white/70 uppercase tracking-wide">
                   {group.category}
                 </h3>
-                <motion.ul
-                  variants={itemVariants}
-                  className="grid grid-cols-2 gap-x-4 gap-y-3"
-                >
-                  {group.items.map((skill) => (
-                    <motion.li
-                      key={skill.name}
-                      variants={chipVariants}
-                      className="group flex items-center gap-2 text-sm"
-                    >
-                      <skill.icon
-                        size={18}
-                        className="text-black/60 dark:text-white/60 shrink-0 transition-all duration-300 ease-out group-hover:text-accent group-hover:rotate-6"
-                      />
-                      <span className="truncate">{skill.name}</span>
-                    </motion.li>
-                  ))}
-                </motion.ul>
+
+                <div className="skill-marquee-wrapper flex-1 mt-2">
+                  <div className="skill-marquee-track">
+                    {group.items.map((skill) => (
+                      <span key={skill.name} className="skill-marquee-chip">
+                        <skill.icon size={14} className="shrink-0" />
+                        {skill.name}
+                      </span>
+                    ))}
+                    {group.items.map((skill) => (
+                      <span
+                        key={`dup-${skill.name}`}
+                        className="skill-marquee-chip"
+                        aria-hidden="true"
+                      >
+                        <skill.icon size={14} className="shrink-0" />
+                        {skill.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               </div>
             </motion.div>
           ))}
