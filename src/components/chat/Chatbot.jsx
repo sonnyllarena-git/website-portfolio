@@ -2,10 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { usePageNav } from '../../context/PageContext';
 import {
-  GREETING_MESSAGE,
+  NAME_PROMPT,
+  getEmailPrompt,
   SUGGESTED_QUESTIONS,
 } from '../../utils/chatKnowledgeBase';
 import { getBotReply } from '../../utils/chatBot';
+import { getAutoReply, getFollowUp } from '../../utils/chatAdaptive';
+import { getTimeBasedGreeting, getTimeOfDay } from '../../utils/timeBasedGreetings';
 import {
   saveChatHistory,
   saveUnansweredQuestions,
@@ -22,6 +25,7 @@ const WARNING_MS = 2 * 60 * 1000;
 const CLOSE_MS = 5 * 60 * 1000;
 const WARNING_TEXT = 'This chat will close in 3 minutes due to inactivity.';
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const ANYTHING_ELSE_REPLY = 'Great! 👍 Is there anything else I can help you with?';
 
 let idCounter = 0;
 function makeMessage(role, content, extra = {}) {
@@ -37,6 +41,10 @@ function serialize(messages) {
   }));
 }
 
+function emptyContext() {
+  return { faqMatches: [], questionsAsked: [], answersGiven: [], selectedOptions: {} };
+}
+
 export default function Chatbot() {
   const { goToPage } = usePageNav();
 
@@ -49,6 +57,11 @@ export default function Chatbot() {
   const [guestEmailInput, setGuestEmailInput] = useState('');
   const [transcriptStatus, setTranscriptStatus] = useState('idle');
   const [transcriptError, setTranscriptError] = useState('');
+
+  const [conversationPhase, setConversationPhase] = useState('name'); // name -> email -> active
+  const [guestName, setGuestName] = useState(null);
+  const [guestEmail, setGuestEmail] = useState(null);
+  const [pendingFollowUpMessageId, setPendingFollowUpMessageId] = useState(null);
 
   const [voicePrefs, setVoicePrefs] = useState(loadVoicePrefs);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -66,10 +79,23 @@ export default function Chatbot() {
   const unansweredRef = useRef([]);
   const hasRequestedContactRef = useRef(false);
   const consecutiveMissesRef = useRef(0);
+  const guestNameRef = useRef(null);
+  const guestEmailRef = useRef(null);
+  const contextRef = useRef(emptyContext());
+  const pendingFollowUpRef = useRef(null);
+  const warningShownRef = useRef(false);
 
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
+
+  useEffect(() => {
+    guestNameRef.current = guestName;
+  }, [guestName]);
+
+  useEffect(() => {
+    guestEmailRef.current = guestEmail;
+  }, [guestEmail]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({
@@ -183,12 +209,21 @@ export default function Chatbot() {
     clearTimeout(closeTimerRef.current);
 
     warningTimerRef.current = setTimeout(() => {
+      warningShownRef.current = true;
       appendMessage(makeMessage('bot', WARNING_TEXT, { isSystem: true }));
     }, WARNING_MS);
 
     closeTimerRef.current = setTimeout(() => {
       requestEnd('timeout');
     }, CLOSE_MS);
+  };
+
+  const recordFollowUpAnswer = (categoryId, answerText) => {
+    contextRef.current = {
+      ...contextRef.current,
+      answersGiven: [...contextRef.current.answersGiven, answerText],
+      selectedOptions: { ...contextRef.current.selectedOptions, [categoryId]: answerText },
+    };
   };
 
   const finalizeInBackground = () => {
@@ -199,28 +234,38 @@ export default function Chatbot() {
     const unanswered = unansweredRef.current;
     const humanFollowUp = hasRequestedContactRef.current;
     const serialized = serialize(finalMessages);
+    const timeOfDay = getTimeOfDay(startedAt);
+    const context = { ...contextRef.current, unansweredQuestions: unanswered };
+    const finalGuestName = guestNameRef.current;
+    const finalGuestEmail = guestEmailRef.current;
 
     (async () => {
       const historyId = await saveChatHistory({
-        guestName: null,
-        guestEmail: null,
+        guestName: finalGuestName,
+        guestEmail: finalGuestEmail,
         messages: serialized,
         startedAt,
         endedAt,
         humanFollowUp,
+        context,
+        timeOfDay,
+        inactivityWarningSent: warningShownRef.current,
       });
 
       if (historyId && unanswered.length) {
-        await saveUnansweredQuestions(historyId, unanswered, null);
+        await saveUnansweredQuestions(historyId, unanswered, finalGuestEmail);
       }
 
       try {
         await sendChatTranscript({
           messages: serialized,
-          guestEmail: null,
+          guestName: finalGuestName,
+          guestEmail: finalGuestEmail,
           startedAt,
           endedAt,
           unansweredQuestions: unanswered,
+          context,
+          timeOfDay,
           notifyOwner: true,
           sendCopyToGuest: false,
         });
@@ -243,6 +288,7 @@ export default function Chatbot() {
 
     setEnded(true);
     setEndReason(reason);
+    setGuestEmailInput(guestEmailRef.current || '');
     finalizeInBackground();
   };
 
@@ -252,61 +298,139 @@ export default function Chatbot() {
 
     if (next && messages.length === 0) {
       startedAtRef.current = new Date();
-      appendMessage(
-        makeMessage('bot', GREETING_MESSAGE, { suggestions: SUGGESTED_QUESTIONS })
-      );
+      appendMessage(makeMessage('bot', NAME_PROMPT));
       resetInactivityTimers();
     }
   };
 
+  const handleGuestText = (trimmed) => {
+    if (conversationPhase === 'name') {
+      setGuestName(trimmed);
+      appendMessage(makeMessage('bot', getEmailPrompt(trimmed)));
+      setConversationPhase('email');
+      return;
+    }
+
+    if (conversationPhase === 'email') {
+      if (!EMAIL_REGEX.test(trimmed)) {
+        appendMessage(
+          makeMessage('bot', "Hmm, that doesn't look like a valid email — mind double-checking it?")
+        );
+        return;
+      }
+      setGuestEmail(trimmed);
+      setConversationPhase('active');
+      const greeting = getTimeBasedGreeting(guestNameRef.current);
+      appendMessage(makeMessage('bot', greeting, { suggestions: SUGGESTED_QUESTIONS }));
+      return;
+    }
+
+    // conversationPhase === 'active'
+    const autoReply = getAutoReply(trimmed);
+    if (autoReply) {
+      consecutiveMissesRef.current = 0;
+      appendMessage(makeMessage('bot', autoReply));
+      return;
+    }
+
+    if (pendingFollowUpRef.current) {
+      const { categoryId, messageId } = pendingFollowUpRef.current;
+      recordFollowUpAnswer(categoryId, trimmed);
+      pendingFollowUpRef.current = null;
+      setPendingFollowUpMessageId(null);
+      setMessages((prev) =>
+        prev.map((m) => (m.id === messageId ? { ...m, choiceMade: trimmed } : m))
+      );
+      appendMessage(makeMessage('bot', ANYTHING_ELSE_REPLY));
+      return;
+    }
+
+    const reply = getBotReply(trimmed);
+    if (reply.matched) {
+      consecutiveMissesRef.current = 0;
+      contextRef.current = {
+        ...contextRef.current,
+        faqMatches: Array.from(new Set([...contextRef.current.faqMatches, reply.category.label])),
+        questionsAsked: [...contextRef.current.questionsAsked, reply.category.id],
+      };
+      appendMessage(
+        makeMessage('bot', reply.text, {
+          cta: { label: reply.category.cta, draftSubject: reply.category.draftSubject },
+        })
+      );
+
+      const followUp = getFollowUp(reply.category.id);
+      setIsTyping(true);
+      setTimeout(() => {
+        setIsTyping(false);
+        const followUpMessage = makeMessage(
+          'bot',
+          followUp.question,
+          followUp.options
+            ? { multipleChoice: { options: followUp.options, categoryId: reply.category.id } }
+            : {}
+        );
+        pendingFollowUpRef.current = { categoryId: reply.category.id, messageId: followUpMessage.id };
+        setPendingFollowUpMessageId(followUpMessage.id);
+        appendMessage(followUpMessage);
+        resetInactivityTimers();
+      }, 550 + Math.random() * 300);
+    } else {
+      unansweredRef.current = [...unansweredRef.current, trimmed];
+      appendMessage(makeMessage('bot', reply.text, { suggestions: reply.suggestions }));
+
+      consecutiveMissesRef.current += 1;
+      if (consecutiveMissesRef.current >= 2) {
+        consecutiveMissesRef.current = 0;
+        appendMessage(
+          makeMessage(
+            'bot',
+            "I couldn't find an answer to that. Would you like to contact Sonny directly?",
+            {
+              cta: {
+                label: 'Contact Sonny directly',
+                draftSubject: 'Question from the chat assistant',
+              },
+            }
+          )
+        );
+      }
+    }
+  };
+
   const respondTo = (text) => {
-    appendMessage(makeMessage('guest', text));
+    const trimmed = text.trim();
+    if (!trimmed) return;
+
+    appendMessage(makeMessage('guest', trimmed));
     setInput('');
     resetInactivityTimers();
     setIsTyping(true);
 
     setTimeout(() => {
-      const reply = getBotReply(text);
       setIsTyping(false);
-
-      if (reply.matched) {
-        consecutiveMissesRef.current = 0;
-        appendMessage(
-          makeMessage('bot', reply.text, {
-            cta: { label: reply.category.cta, draftSubject: reply.category.draftSubject },
-          })
-        );
-      } else {
-        unansweredRef.current = [...unansweredRef.current, text];
-        appendMessage(makeMessage('bot', reply.text, { suggestions: reply.suggestions }));
-
-        consecutiveMissesRef.current += 1;
-        if (consecutiveMissesRef.current >= 2) {
-          consecutiveMissesRef.current = 0;
-          appendMessage(
-            makeMessage(
-              'bot',
-              "I couldn't find an answer to that. Would you like to contact Sonny directly?",
-              {
-                cta: {
-                  label: 'Contact Sonny directly',
-                  draftSubject: 'Question from the chat assistant',
-                },
-              }
-            )
-          );
-        }
-      }
-
+      handleGuestText(trimmed);
       resetInactivityTimers();
     }, 700 + Math.random() * 400);
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const trimmed = input.trim();
-    if (!trimmed) return;
-    respondTo(trimmed);
+    respondTo(input);
+  };
+
+  const handleMultipleChoiceSelect = (message, option) => {
+    if (message.choiceMade || pendingFollowUpMessageId !== message.id) return;
+
+    const { categoryId } = message.multipleChoice;
+    recordFollowUpAnswer(categoryId, option.text);
+    pendingFollowUpRef.current = null;
+    setPendingFollowUpMessageId(null);
+    setMessages((prev) =>
+      prev.map((m) => (m.id === message.id ? { ...m, choiceMade: option.text } : m))
+    );
+    appendMessage(makeMessage('bot', ANYTHING_ELSE_REPLY));
+    resetInactivityTimers();
   };
 
   const handleCtaClick = (draftSubject) => {
@@ -335,10 +459,13 @@ export default function Chatbot() {
     try {
       await sendChatTranscript({
         messages: serialize(messagesRef.current),
+        guestName: guestNameRef.current,
         guestEmail: guestEmailInput.trim(),
         startedAt: startedAtRef.current ?? new Date(),
         endedAt: endedAtRef.current ?? new Date(),
         unansweredQuestions: unansweredRef.current,
+        context: { ...contextRef.current, unansweredQuestions: unansweredRef.current },
+        timeOfDay: getTimeOfDay(startedAtRef.current ?? new Date()),
         notifyOwner: false,
         sendCopyToGuest: true,
       });
@@ -366,7 +493,22 @@ export default function Chatbot() {
     setIsTestingMic(false);
     setMicTestResult('');
     setVoiceError('');
+
+    setConversationPhase('name');
+    setGuestName(null);
+    setGuestEmail(null);
+    setPendingFollowUpMessageId(null);
+    pendingFollowUpRef.current = null;
+    contextRef.current = emptyContext();
+    warningShownRef.current = false;
   };
+
+  const inputPlaceholder =
+    conversationPhase === 'name'
+      ? 'Type your name...'
+      : conversationPhase === 'email'
+        ? 'Type your email...'
+        : 'Ask me anything...';
 
   return (
     <>
@@ -379,8 +521,11 @@ export default function Chatbot() {
             input={input}
             onInputChange={setInput}
             onSubmit={handleSubmit}
+            inputPlaceholder={inputPlaceholder}
             onSuggestionClick={respondTo}
             onCtaClick={handleCtaClick}
+            onMultipleChoiceSelect={handleMultipleChoiceSelect}
+            pendingFollowUpMessageId={pendingFollowUpMessageId}
             onClose={() => requestEnd('manual')}
             ended={ended}
             endReason={endReason}

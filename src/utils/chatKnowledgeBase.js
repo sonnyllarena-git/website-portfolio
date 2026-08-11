@@ -232,8 +232,11 @@ export const SUGGESTED_QUESTIONS = [
 
 export const FALLBACK_SUGGESTIONS = SUGGESTED_QUESTIONS;
 
-export const GREETING_MESSAGE =
-  "Hi! I'm Sonny's virtual assistant. Ask me about pricing, timelines, tech stack, or anything else about working with Sonny — I'm here to help!";
+export const NAME_PROMPT = "Hey! What's your name?";
+
+export function getEmailPrompt(guestName) {
+  return `Thanks ${guestName}! What's the best email to reach you?`;
+}
 
 export function findCategoryById(id) {
   return CHAT_CATEGORIES.find((category) => category.id === id) ?? null;

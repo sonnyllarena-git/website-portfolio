@@ -7,6 +7,9 @@ export async function saveChatHistory({
   startedAt,
   endedAt,
   humanFollowUp,
+  context,
+  timeOfDay,
+  inactivityWarningSent,
 }) {
   if (!isSupabaseConfigured) return null;
 
@@ -29,6 +32,9 @@ export async function saveChatHistory({
       total_messages: totalMessages,
       bot_responses: botResponses,
       human_follow_up: Boolean(humanFollowUp),
+      conversation_context: context || {},
+      time_of_day: timeOfDay || null,
+      inactivity_warning_sent: Boolean(inactivityWarningSent),
     })
     .select('id')
     .single();
@@ -65,6 +71,9 @@ export async function sendChatTranscript({
   startedAt,
   endedAt,
   unansweredQuestions,
+  context,
+  timeOfDay,
+  notifyOwner,
   sendCopyToGuest,
 }) {
   if (!isSupabaseConfigured) {
@@ -81,6 +90,9 @@ export async function sendChatTranscript({
       startedAt: startedAt.toISOString(),
       endedAt: endedAt.toISOString(),
       unansweredQuestions,
+      context,
+      timeOfDay,
+      notifyOwner,
       sendCopyToGuest,
     },
   });

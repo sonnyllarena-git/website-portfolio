@@ -18,6 +18,14 @@ function isValidEmail(email: string) {
 
 type ChatMessage = { role: 'guest' | 'bot'; content: string; timestamp: string };
 
+type ConversationContext = {
+  faqMatches?: string[];
+  questionsAsked?: string[];
+  answersGiven?: string[];
+  selectedOptions?: Record<string, string>;
+  unansweredQuestions?: string[];
+};
+
 type Payload = {
   messages?: ChatMessage[];
   guestName?: string;
@@ -25,9 +33,15 @@ type Payload = {
   startedAt?: string;
   endedAt?: string;
   unansweredQuestions?: string[];
+  context?: ConversationContext;
+  timeOfDay?: string;
   notifyOwner?: boolean;
   sendCopyToGuest?: boolean;
 };
+
+function capitalize(word: string) {
+  return word ? word[0].toUpperCase() + word.slice(1) : word;
+}
 
 function formatTranscript(
   messages: ChatMessage[],
@@ -35,37 +49,58 @@ function formatTranscript(
   guestEmail: string,
   startedAt: string,
   endedAt: string,
-  unansweredQuestions: string[]
+  unansweredQuestions: string[],
+  context: ConversationContext,
+  timeOfDay: string
 ) {
   const start = new Date(startedAt);
   const end = new Date(endedAt);
-  const durationMinutes = Math.max(
-    1,
-    Math.round((end.getTime() - start.getTime()) / 60000)
-  );
+  const durationSeconds = Math.max(0, Math.round((end.getTime() - start.getTime()) / 1000));
+  const durationMinutes = Math.floor(durationSeconds / 60);
+  const remainingSeconds = durationSeconds % 60;
 
   const conversation = messages
     .map((m) => {
-      const who = m.role === 'guest' ? 'Guest' : 'Bot';
+      const who = m.role === 'guest' ? 'Guest' : 'You';
       const time = new Date(m.timestamp).toLocaleTimeString();
       return `[${time}] ${who}: ${m.content}`;
     })
     .join('\n');
 
   const unanswered = unansweredQuestions.length
-    ? unansweredQuestions.map((q) => `- ${q}`).join('\n')
-    : 'None';
+    ? unansweredQuestions.map((q, i) => `${i + 1}. "${q}"`).join('\n')
+    : 'None - All questions were answered!';
+
+  const faqMatches = context.faqMatches?.length ? context.faqMatches.join(', ') : 'None';
+  const selectedOptions = context.selectedOptions ?? {};
+  const preferences = Object.keys(selectedOptions).length
+    ? Object.entries(selectedOptions)
+        .map(([category, answer]) => `- ${capitalize(category)}: ${answer}`)
+        .join('\n')
+    : 'None captured';
 
   return `From: ${guestName || 'Guest'} (${guestEmail || 'no email provided'})
-Chat Duration: ${durationMinutes} minute(s)
+Time of Chat: ${capitalize(timeOfDay || 'unknown')}
+Chat Duration: ${durationMinutes} minute(s) ${remainingSeconds} second(s)
 Date: ${end.toLocaleString()}
 
----CONVERSATION---
-${conversation}
----END---
+---GUEST INFORMATION---
+Name: ${guestName || 'Guest'}
+Email: ${guestEmail || 'no email provided'}
 
-Unanswered Questions:
+---CONVERSATION FLOW---
+${conversation}
+
+---CONVERSATION CONTEXT---
+Topics Discussed: ${faqMatches}
+Guest Preferences Captured:
+${preferences}
+
+---UNANSWERED QUESTIONS---
 ${unanswered}
+
+---NEXT STEPS---
+Best contact time: ${(timeOfDay || 'unknown').toLowerCase()}
 
 ---
 This is an automated transcript from the portfolio chatbot.
@@ -119,6 +154,8 @@ Deno.serve(async (req) => {
   const unansweredQuestions = Array.isArray(payload.unansweredQuestions)
     ? payload.unansweredQuestions
     : [];
+  const context = payload.context ?? {};
+  const timeOfDay = payload.timeOfDay ?? '';
   const notifyOwner = payload.notifyOwner !== false;
   const sendCopyToGuest = Boolean(payload.sendCopyToGuest);
 
@@ -161,7 +198,9 @@ Deno.serve(async (req) => {
     guestEmail,
     startedAt,
     endedAt,
-    unansweredQuestions
+    unansweredQuestions,
+    context,
+    timeOfDay
   );
 
   if (notifyOwner) {

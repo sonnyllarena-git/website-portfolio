@@ -13,6 +13,7 @@ import {
 } from 'react-icons/fi';
 import ChatMessageText from './ChatMessageText';
 import VoiceSettingsPanel from './VoiceSettingsPanel';
+import MultipleChoiceOptions from './MultipleChoiceOptions';
 
 function formatTime(date) {
   return date.toLocaleTimeString(undefined, {
@@ -41,6 +42,8 @@ function MessageBubble({
   message,
   onSuggestionClick,
   onCtaClick,
+  onMultipleChoiceSelect,
+  pendingFollowUpMessageId,
   voiceOutputEnabled,
   synthesisSupported,
   speakingMessageId,
@@ -99,6 +102,15 @@ function MessageBubble({
               </button>
             ))}
           </div>
+        )}
+
+        {message.multipleChoice && (
+          <MultipleChoiceOptions
+            options={message.multipleChoice.options}
+            selected={message.choiceMade}
+            disabled={pendingFollowUpMessageId !== message.id}
+            onSelect={(option) => onMultipleChoiceSelect(message, option)}
+          />
         )}
 
         <span className="text-[10px] mt-1 opacity-50">
@@ -180,8 +192,11 @@ export default function ChatWindow({
   input,
   onInputChange,
   onSubmit,
+  inputPlaceholder,
   onSuggestionClick,
   onCtaClick,
+  onMultipleChoiceSelect,
+  pendingFollowUpMessageId,
   onClose,
   ended,
   endReason,
@@ -276,6 +291,8 @@ export default function ChatWindow({
                 message={message}
                 onSuggestionClick={onSuggestionClick}
                 onCtaClick={onCtaClick}
+                onMultipleChoiceSelect={onMultipleChoiceSelect}
+                pendingFollowUpMessageId={pendingFollowUpMessageId}
                 voiceOutputEnabled={voicePrefs.voiceOutputEnabled}
                 synthesisSupported={synthesisSupported}
                 speakingMessageId={speakingMessageId}
@@ -307,7 +324,7 @@ export default function ChatWindow({
                 type="text"
                 value={input}
                 onChange={(e) => onInputChange(e.target.value)}
-                placeholder="Ask me anything..."
+                placeholder={inputPlaceholder}
                 className="form-input-focus flex-1 text-sm px-3.5 py-2.5 rounded-full bg-black/5 dark:bg-white/10 outline-none"
               />
               {voicePrefs.voiceInputEnabled && (
