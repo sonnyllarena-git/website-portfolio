@@ -30,14 +30,14 @@ export default function Projects() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.6, ease: 'easeOut' }}
-          className="text-4xl md:text-5xl font-black mb-14 text-center"
+          className="text-4xl md:text-5xl font-black mb-14 -mt-4 md:-mt-6 text-center"
         >
           <span className="text-accent">Projects.</span>
         </motion.h2>
 
-        <div className="grid md:grid-cols-2 gap-10 lg:gap-16 items-center">
+        <div className="grid md:grid-cols-2 gap-10 lg:gap-16 items-center mt-16 md:mt-20">
           {/* LEFT: project content */}
-          <div className="w-full max-w-[440px] md:mx-auto">
+          <div className="w-full max-w-[440px] md:mx-auto md:min-h-[560px]">
             <AnimatePresence mode="wait" initial={false}>
               <motion.div
                 key={project.id}
