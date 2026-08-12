@@ -35,7 +35,7 @@ export default function Skills() {
         >
           {SKILLS.map((group) => (
             <motion.div key={group.category} variants={cardVariants}>
-              <div className="skill-neon h-48 flex flex-col rounded-2xl border border-border-light dark:border-white/10 bg-white dark:bg-white/5 p-6">
+              <div className="skill-neon h-48 flex flex-col rounded-2xl border border-border-light dark:border-white/10 bg-white dark:bg-bg-dark p-6">
                 <h3 className="text-base font-bold text-center text-black/70 dark:text-white/70 uppercase tracking-wide">
                   {group.category}
                 </h3>

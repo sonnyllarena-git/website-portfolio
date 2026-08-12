@@ -1,5 +1,47 @@
 import { createNoise2D } from 'simplex-noise';
 
+// Kept well inside ±1 NDC so the robot is always fully on-screen — it
+// bounces off these like walls rather than exiting and wrapping. Exported
+// (along with depthConfinement/computeDynamicBounds below) so the renderer
+// can build a persistent 3D wall mesh using the exact same boundary math
+// the physics sim bounces against, instead of a separate approximation.
+export const BASE_BOUNDS = {
+  x: [-0.86, 0.86],
+  y: [-0.78, 0.8], // leaves clearance for the navbar/footer strips
+  z: [3.5, 11],
+};
+
+// How much the x/y walls close in toward center at the far end of the z
+// range, as a fraction of their close-range width. 0 = no depth confinement
+// (walls stay put regardless of z), 1 = collapses to a single point at
+// bounds.z[1]. Tune here if the far robot feels too caged (lower) or still
+// roams too freely when tiny (raise).
+export const DEPTH_CONFINEMENT = 0.8;
+
+// Screen-space (x/y) bounds shrink toward center as z (camera distance)
+// grows, so a perspective-shrunk far robot reads as confined to a small
+// patch of screen instead of roaming the full viewport like a close, large
+// one does. z keeps its own fixed bounds — it's the axis these are
+// interpolated across, not one that scales itself. A pure function (rather
+// than a RobotPhysics method) so the renderer can sample it to build the
+// boundary wall geometry without needing a live physics instance.
+export function computeDynamicBounds(z, bounds = BASE_BOUNDS, depthConfinement = DEPTH_CONFINEMENT) {
+  const [zMin, zMax] = bounds.z;
+  const zNorm = Math.min(Math.max((z - zMin) / (zMax - zMin), 0), 1);
+  const shrink = 1 - zNorm * depthConfinement;
+
+  const xMax = bounds.x[1] * shrink;
+
+  const [yMinClose, yMaxClose] = bounds.y;
+  const yCenter = (yMinClose + yMaxClose) / 2;
+  const yHalf = ((yMaxClose - yMinClose) / 2) * shrink;
+
+  return {
+    x: [-xMax, xMax],
+    y: [yCenter - yHalf, yCenter + yHalf],
+  };
+}
+
 // Position/velocity live in a screen-normalized space: x,y are roughly NDC
 // (-1..1, matching the viewport's projected coordinates), z is a real
 // Three.js camera-distance in world units so perspective (far = small) comes
@@ -8,17 +50,23 @@ export class RobotPhysics {
   constructor() {
     this.pos = { x: 0, y: 0.1, z: 6.5 };
     this.vel = { x: 0, y: 0, z: 0 };
-
-    // Kept well inside ±1 NDC so the robot is always fully on-screen —
-    // it bounces off these like walls rather than exiting and wrapping.
-    this.bounds = {
-      x: [-0.86, 0.86],
-      y: [-0.78, 0.8], // leaves clearance for the navbar/footer strips
-      z: [3.5, 11],
-    };
+    this.bounds = BASE_BOUNDS;
 
     this.damping = 0.965;
     this.maxSpeed = 0.016;
+    this.depthConfinement = DEPTH_CONFINEMENT;
+
+    // Wall bounces are damped harder than a plain boundary clamp so the
+    // robot settles at the edge instead of oscillating back into it.
+    this.wallBounce = 0.3;
+
+    // Edge-triggered collision events for the current frame, consumed by
+    // the renderer to spawn the electric spark effect. Cleared every update().
+    this.wallCollisionEvents = [];
+    // Tracks which bound (if any) each axis is currently pinned against, so
+    // a robot held against a wall by wander/avoidance forces fires the
+    // collision event once on contact instead of every single frame.
+    this._pinnedAxis = { x: null, y: null };
 
     // 'roaming' | 'avoidance' | 'firing'
     this.state = 'roaming';
@@ -114,8 +162,23 @@ export class RobotPhysics {
     return min;
   }
 
+  calculateDynamicBounds(z) {
+    return computeDynamicBounds(z, this.bounds, this.depthConfinement);
+  }
+
+  triggerWallCollision(axis, direction, bounds) {
+    const key = `${axis}:${direction}`;
+    if (this._pinnedAxis[axis] === key) return;
+    this._pinnedAxis[axis] = key;
+    // bounds is the perpendicular axis's current dynamic range, so the
+    // renderer can size the flashed wall panel to the boundary's real
+    // extent instead of a fixed, easily-lost-in-the-robot tick mark.
+    this.wallCollisionEvents.push({ axis, direction, pos: { ...this.pos }, vel: { ...this.vel }, bounds });
+  }
+
   update(deltaTime, keycaps = []) {
     this.keycaps = keycaps;
+    this.wallCollisionEvents = [];
 
     if (this.state === 'firing') {
       return this.updateFiring(deltaTime);
@@ -158,21 +221,22 @@ export class RobotPhysics {
     this.pos.z += this.vel.z * step;
 
     // Bounce off every wall — the robot always stays fully visible instead
-    // of exiting one edge to reappear on the other.
-    if (this.pos.x < this.bounds.x[0]) {
-      this.pos.x = this.bounds.x[0];
-      this.vel.x *= -0.5;
-    } else if (this.pos.x > this.bounds.x[1]) {
-      this.pos.x = this.bounds.x[1];
-      this.vel.x *= -0.5;
-    }
-
-    if (this.pos.y < this.bounds.y[0]) {
-      this.pos.y = this.bounds.y[0];
-      this.vel.y *= -0.5;
-    } else if (this.pos.y > this.bounds.y[1]) {
-      this.pos.y = this.bounds.y[1];
-      this.vel.y *= -0.5;
+    // of exiting one edge to reappear on the other. x/y walls scale with
+    // the current depth (see calculateDynamicBounds); z keeps fixed bounds.
+    const dynamicBounds = this.calculateDynamicBounds(this.pos.z);
+    for (const axis of ['x', 'y']) {
+      const [min, max] = dynamicBounds[axis];
+      if (this.pos[axis] < min) {
+        this.pos[axis] = min;
+        this.vel[axis] = Math.abs(this.vel[axis]) * this.wallBounce;
+        this.triggerWallCollision(axis, 'min', dynamicBounds);
+      } else if (this.pos[axis] > max) {
+        this.pos[axis] = max;
+        this.vel[axis] = -Math.abs(this.vel[axis]) * this.wallBounce;
+        this.triggerWallCollision(axis, 'max', dynamicBounds);
+      } else {
+        this._pinnedAxis[axis] = null;
+      }
     }
 
     if (this.pos.z < this.bounds.z[0]) {

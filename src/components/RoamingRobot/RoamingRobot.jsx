@@ -1,25 +1,23 @@
-import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { forwardRef, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Vector3 } from 'three';
 import RobotModel from '../ChatRobot/RobotModel';
-import RobotPhysics from './RobotPhysics';
+import RobotPhysics, { BASE_BOUNDS, computeDynamicBounds } from './RobotPhysics';
 import { useKeycapAvoidance } from '../../context/KeycapAvoidanceContext';
+import { WallCollisionEffect } from '../effects/WallCollisionEffect';
 
 const CAMERA_FOV = 50;
 const ROBOT_SCALE = 0.28;
 const BEAM_END_Z = 1.4; // near the "screen surface" so the beam reads as hitting the button
 const UP_AXIS = new Vector3(0, 1, 0);
+const MAX_WALL_HIT_EFFECTS = 6; // caps runaway spawns if the robot gets pinned
 
-// The scene is one flat canvas layer, so "passing behind" the page content
-// is a binary z-index swap rather than true per-pixel depth sorting. The two
-// layers straddle <main>'s z-20 (see App.jsx); Navbar/Footer/Chat stay above
-// both at z-30/z-50 regardless. Enter/exit thresholds are offset (rather than
-// a single focal plane) so noise-driven jitter near the boundary can't flap
-// the layer back and forth every frame.
-const FRONT_LAYER_Z = 25;
+// The robot's layer always renders behind <main> (z-20 in App.jsx), on every
+// page — it used to swap in front of content when close enough, but that
+// meant it (and its wall-collision flashes) could land directly on top of
+// body text on pages denser than Home, obscuring it. Page content stays the
+// front-most layer everywhere; Navbar/Footer/Chat stay above both regardless.
 const BEHIND_LAYER_Z = 15;
-const FOCAL_ENTER_FRONT_Z = 6.5; // closer than this -> in front of content
-const FOCAL_EXIT_FRONT_Z = 8.0; // farther than this -> behind content
 
 // pos.z is the model's real distance from a camera at the origin, so the
 // PerspectiveCamera's own projection gives correct "far = small" perspective
@@ -38,15 +36,116 @@ function pixelToNDC(px, py) {
   };
 }
 
-const RoamingScene = forwardRef(function RoamingScene({ layerRef }, ref) {
+// Invisible-until-touched wireframe boundary walls — stay fully transparent
+// until the robot hits one, then that specific wall flashes in as a
+// force-field grid and fades back out, instead of an invisible clamp with
+// no visual at all. Built from the exact computeDynamicBounds curve across
+// the z range (the boundary shrinks toward center with depth, so it's a
+// tapering funnel, not a flat box) and rendered as thin converging lines —
+// a solid filled surface was tried first and just washed the screen in flat
+// cyan once the near and far ends of all four walls overlapped; a wireframe
+// reads as a receding 3D tunnel instead, the same way any sci-fi force-field
+// grid does, without covering the screen.
+const WALL_COLOR = '#00FFFF';
+const WALL_AMBIENT_OPACITY = 0; // fully invisible at rest — see file header comment
+const WALL_FLASH_PEAK_OPACITY = 0.5;
+const WALL_FLASH_DECAY = 0.6; // seconds for a flash to fade back out
+const WALL_RAIL_SEGMENTS = 20; // resolution of the two long rails tracing each wall's edges
+const WALL_RUNG_COUNT = 7; // cross-sectional rungs, like ribs down a funnel
+const WALL_SIDES = ['left', 'right', 'top', 'bottom'];
+// Maps a physics collision's axis+direction to the wall side it represents.
+const WALL_SIDE_BY_HIT = { 'x:min': 'left', 'x:max': 'right', 'y:max': 'top', 'y:min': 'bottom' };
+
+// Returns the two edge points (in world space) of the given wall side at a
+// given z — e.g. for 'left', the top-left and bottom-left corners of the
+// confinement box at that depth.
+function sampleWallEdge(side, z, camera) {
+  const bounds = computeDynamicBounds(z);
+  if (side === 'left' || side === 'right') {
+    const x = side === 'left' ? bounds.x[0] : bounds.x[1];
+    return [worldFromPhysics({ x, y: bounds.y[1], z }, camera), worldFromPhysics({ x, y: bounds.y[0], z }, camera)];
+  }
+  const y = side === 'top' ? bounds.y[1] : bounds.y[0];
+  return [worldFromPhysics({ x: bounds.x[1], y, z }, camera), worldFromPhysics({ x: bounds.x[0], y, z }, camera)];
+}
+
+// Two rails (continuous lines tracing each edge from near to far — the
+// converging lines that read as "receding into the distance") plus several
+// rungs (cross-sections at fixed depths, like the ribs of a funnel).
+function buildWallWireframe(side, camera) {
+  const [zMin, zMax] = BASE_BOUNDS.z;
+  const verts = [];
+  let prev = null;
+  for (let i = 0; i <= WALL_RAIL_SEGMENTS; i++) {
+    const z = zMin + ((zMax - zMin) * i) / WALL_RAIL_SEGMENTS;
+    const [a, b] = sampleWallEdge(side, z, camera);
+    if (prev) {
+      verts.push(...prev[0], ...a);
+      verts.push(...prev[1], ...b);
+    }
+    prev = [a, b];
+  }
+  for (let i = 0; i <= WALL_RUNG_COUNT; i++) {
+    const z = zMin + ((zMax - zMin) * i) / WALL_RUNG_COUNT;
+    const [a, b] = sampleWallEdge(side, z, camera);
+    verts.push(...a, ...b);
+  }
+  return new Float32Array(verts);
+}
+
+// flashRef: mutable { left, right, top, bottom } 0..1 decay values, bumped
+// to 1 by RoamingScene on a matching collision and decayed here every
+// frame — avoids per-hit React state since the walls themselves are static,
+// persistent meshes that only need their material opacity animated.
+function BoundaryWalls({ flashRef }) {
+  const { camera } = useThree();
+  // Computed once at mount from the camera's current aspect — a resize
+  // would leave this very slightly out of sync with the real bounds, an
+  // acceptable approximation for a decorative boundary visualization.
+  const geometries = useMemo(() => Object.fromEntries(WALL_SIDES.map((side) => [side, buildWallWireframe(side, camera)])), []); // eslint-disable-line react-hooks/exhaustive-deps
+  const materialRefs = useRef({});
+
+  useFrame((_, delta) => {
+    const flash = flashRef.current;
+    for (const side of WALL_SIDES) {
+      flash[side] = Math.max(0, flash[side] - delta / WALL_FLASH_DECAY);
+      const mat = materialRefs.current[side];
+      if (mat) mat.opacity = WALL_AMBIENT_OPACITY + flash[side] * (WALL_FLASH_PEAK_OPACITY - WALL_AMBIENT_OPACITY);
+    }
+  });
+
+  return (
+    <>
+      {WALL_SIDES.map((side) => (
+        <lineSegments key={side}>
+          <bufferGeometry>
+            <bufferAttribute attach="attributes-position" args={[geometries[side], 3]} />
+          </bufferGeometry>
+          <lineBasicMaterial
+            ref={(m) => (materialRefs.current[side] = m)}
+            color={WALL_COLOR}
+            transparent
+            opacity={WALL_AMBIENT_OPACITY}
+            toneMapped={false}
+            depthWrite={false}
+          />
+        </lineSegments>
+      ))}
+    </>
+  );
+}
+
+const RoamingScene = forwardRef(function RoamingScene(_props, ref) {
   const physicsRef = useRef(new RobotPhysics());
   const groupRef = useRef();
   const gunTipRef = useRef();
   const beamRef = useRef();
   const avoidanceRef = useKeycapAvoidance();
   const [robotState, setRobotState] = useState('idle');
+  const [wallHitEffects, setWallHitEffects] = useState([]);
+  const hitIdRef = useRef(0);
+  const wallFlashRef = useRef({ left: 0, right: 0, top: 0, bottom: 0 });
   const lastPhaseRef = useRef('roaming');
-  const depthLayerRef = useRef('behind');
   const fireCallbackRef = useRef(null);
   const fireTargetNDCRef = useRef({ x: 0, y: 0 });
   const startVecRef = useRef(new Vector3());
@@ -70,6 +169,22 @@ const RoamingScene = forwardRef(function RoamingScene({ layerRef }, ref) {
       fireCallbackRef.current = null;
     }
 
+    const wallHits = physicsRef.current.wallCollisionEvents;
+    if (wallHits.length) {
+      for (const wallHit of wallHits) {
+        const side = WALL_SIDE_BY_HIT[`${wallHit.axis}:${wallHit.direction}`];
+        if (side) wallFlashRef.current[side] = 1;
+      }
+      setWallHitEffects((prev) => {
+        const additions = wallHits.map((wallHit) => ({
+          id: hitIdRef.current++,
+          position: worldFromPhysics(wallHit.pos, state.camera),
+        }));
+        const next = [...prev, ...additions];
+        return next.length > MAX_WALL_HIT_EFFECTS ? next.slice(next.length - MAX_WALL_HIT_EFFECTS) : next;
+      });
+    }
+
     const phase = physicsRef.current.state;
     if (phase !== lastPhaseRef.current) {
       lastPhaseRef.current = phase;
@@ -79,17 +194,6 @@ const RoamingScene = forwardRef(function RoamingScene({ layerRef }, ref) {
     if (groupRef.current) {
       const [x, y, z] = worldFromPhysics(physicsRef.current.pos, state.camera);
       groupRef.current.position.set(x, y, z);
-    }
-
-    if (layerRef?.current) {
-      const depthZ = physicsRef.current.pos.z;
-      if (depthLayerRef.current === 'behind' && depthZ < FOCAL_ENTER_FRONT_Z) {
-        depthLayerRef.current = 'front';
-        layerRef.current.style.zIndex = FRONT_LAYER_Z;
-      } else if (depthLayerRef.current === 'front' && depthZ > FOCAL_EXIT_FRONT_Z) {
-        depthLayerRef.current = 'behind';
-        layerRef.current.style.zIndex = BEHIND_LAYER_Z;
-      }
     }
 
     if (!beamRef.current) return;
@@ -126,6 +230,7 @@ const RoamingScene = forwardRef(function RoamingScene({ layerRef }, ref) {
 
   return (
     <>
+      <BoundaryWalls flashRef={wallFlashRef} />
       <group ref={groupRef}>
         <group scale={ROBOT_SCALE}>
           <RobotModel robotState={robotState} gunTipRef={gunTipRef} />
@@ -135,6 +240,13 @@ const RoamingScene = forwardRef(function RoamingScene({ layerRef }, ref) {
         <cylinderGeometry args={[0.018, 0.018, 1, 6]} />
         <meshBasicMaterial color="#00FFFF" transparent opacity={1} toneMapped={false} />
       </mesh>
+      {wallHitEffects.map((effect) => (
+        <WallCollisionEffect
+          key={effect.id}
+          position={effect.position}
+          onExpire={() => setWallHitEffects((prev) => prev.filter((w) => w.id !== effect.id))}
+        />
+      ))}
     </>
   );
 });
@@ -146,7 +258,6 @@ const RoamingScene = forwardRef(function RoamingScene({ layerRef }, ref) {
 // data-chat-launcher attribute).
 const RoamingRobot = forwardRef(function RoamingRobot(_, ref) {
   const sceneRef = useRef(null);
-  const layerRef = useRef(null);
   const [skip] = useState(
     () => window.innerWidth < 768 || window.matchMedia('(prefers-reduced-motion: reduce)').matches
   );
@@ -165,7 +276,6 @@ const RoamingRobot = forwardRef(function RoamingRobot(_, ref) {
 
   return (
     <div
-      ref={layerRef}
       className="fixed inset-0 pointer-events-none"
       style={{ zIndex: BEHIND_LAYER_Z }}
       aria-hidden="true"
@@ -179,7 +289,7 @@ const RoamingRobot = forwardRef(function RoamingRobot(_, ref) {
         <ambientLight intensity={0.7} />
         <directionalLight position={[3, 6, 4]} intensity={1.1} />
         <pointLight position={[-3, -2, -3]} color="#FF6B00" intensity={0.25} />
-        <RoamingScene ref={sceneRef} layerRef={layerRef} />
+        <RoamingScene ref={sceneRef} />
       </Canvas>
     </div>
   );

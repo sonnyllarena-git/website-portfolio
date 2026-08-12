@@ -16,7 +16,7 @@ export const KeycapHoverContext = createContext(null);
 const MAX_DRAG_SPEED = 40;
 const clamp = (v, max) => Math.max(-max, Math.min(max, v));
 
-const KeyCap = ({ position, rotation, item, id }) => {
+const KeyCap = ({ position, rotation, item, id, onWallHit }) => {
   const rigidBodyRef = useRef();
   const [isDragging, setIsDragging] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -60,6 +60,18 @@ const KeyCap = ({ position, rotation, item, id }) => {
       y: clamp((hit.y - currentPos.y) * 18, MAX_DRAG_SPEED),
       z: 0,
     }, true);
+  };
+
+  // Only the jar's x-axis (left/right) walls carry the electric wall-hit
+  // effect — see ScreenJar.jsx for why the floor and z-axis walls are excluded.
+  // Left vs right is inferred from which side of the (x=0-centered) jar the
+  // keycap was on when it hit — the two wall colliders sit far enough apart
+  // (x=-12/+12) that the sign of pos.x is unambiguous.
+  const handleCollisionEnter = ({ other }) => {
+    if (other.colliderObject?.name !== 'jar-wall-x') return;
+    const pos = rigidBodyRef.current?.translation();
+    if (!pos) return;
+    onWallHit?.({ side: pos.x < 0 ? 'left' : 'right', position: [pos.x, pos.y, pos.z] });
   };
 
   const handlePointerEnter = () => {
@@ -114,6 +126,7 @@ const KeyCap = ({ position, rotation, item, id }) => {
       friction={0.3}
       linearDamping={0.5}
       angularDamping={0.5}
+      onCollisionEnter={handleCollisionEnter}
     >
       <group
         onPointerDown={handlePointerDown}

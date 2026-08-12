@@ -26,7 +26,7 @@ export default function About() {
           transition={{ duration: 0.6, ease: 'easeOut' }}
           className="relative justify-self-center"
         >
-          <div className="profile-neon w-64 h-72 md:w-80 md:h-96 border-2 border-black dark:border-white rounded-2xl bg-white/40 dark:bg-white/5 flex items-center justify-center relative overflow-hidden">
+          <div className="profile-neon w-64 h-72 md:w-80 md:h-96 border-2 border-black dark:border-white rounded-2xl bg-white/40 dark:bg-bg-dark flex items-center justify-center relative overflow-hidden">
             <span className="text-black/30 dark:text-white/30 text-sm">
               Profile Photo
             </span>
