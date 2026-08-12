@@ -148,13 +148,6 @@ html.dark body {
     box-shadow: 0 0 24px rgba(255, 107, 53, 0.6);
   }
 
-  .chat-robot-canvas {
-    width: 128px;
-    height: 148px;
-    margin-bottom: -26px;
-    pointer-events: none;
-  }
-
   .chat-window-glow {
     border: 1px solid rgba(255, 107, 53, 0.4);
     box-shadow: 0 0 30px rgba(255, 107, 53, 0.15), 0 20px 40px rgba(0, 0, 0, 0.15);

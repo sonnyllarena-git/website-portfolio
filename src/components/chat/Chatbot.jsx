@@ -45,7 +45,7 @@ function emptyContext() {
   return { faqMatches: [], questionsAsked: [], answersGiven: [], selectedOptions: {} };
 }
 
-export default function Chatbot() {
+export default function Chatbot({ onRequestOpen }) {
   const { goToPage } = usePageNav();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -292,14 +292,27 @@ export default function Chatbot() {
     finalizeInBackground();
   };
 
-  const handleOpenToggle = () => {
-    const next = !isOpen;
-    setIsOpen(next);
-
-    if (next && messages.length === 0) {
+  const openNow = () => {
+    setIsOpen(true);
+    if (messages.length === 0) {
       startedAtRef.current = new Date();
       appendMessage(makeMessage('bot', NAME_PROMPT));
       resetInactivityTimers();
+    }
+  };
+
+  // Opening the chat is gated behind the roaming robot's laser actually
+  // landing on the button — minimizing (the same button while open) stays
+  // instant, since that's not part of the "shoot to open" flourish.
+  const handleOpenToggle = () => {
+    if (isOpen) {
+      setIsOpen(false);
+      return;
+    }
+    if (onRequestOpen) {
+      onRequestOpen(openNow);
+    } else {
+      openNow();
     }
   };
 

@@ -1,8 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ThemeProvider } from './context/ThemeContext';
 import { PageNavProvider, usePageNav } from './context/PageContext';
+import { KeycapAvoidanceProvider } from './context/KeycapAvoidanceContext';
 import { pageVariants } from './components/PageTransition';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -15,6 +16,7 @@ import Projects from './components/Projects';
 import Learning from './components/Learning';
 import Contact from './components/Contact';
 import Chatbot from './components/chat/Chatbot';
+import RoamingRobot from './components/RoamingRobot/RoamingRobot';
 
 const PAGES = {
   home: Hero,
@@ -51,23 +53,36 @@ function AnimatedPages() {
 }
 
 function App() {
+  const roamingRobotRef = useRef(null);
+
+  const handleRequestOpen = (openNow) => {
+    const button = document.querySelector('[data-chat-launcher]');
+    const rect = button?.getBoundingClientRect();
+    const px = rect ? rect.left + rect.width / 2 : window.innerWidth - 50;
+    const py = rect ? rect.top + rect.height / 2 : window.innerHeight - 50;
+    roamingRobotRef.current?.fireLaserAt(px, py, openNow);
+  };
+
   return (
     <ThemeProvider>
       <PageNavProvider>
-        <BrowserRouter>
-          <div className="min-h-screen text-black dark:text-white relative">
-            <OrangePixels />
-            <CursorOrb />
-            <Navbar />
-            <main className="relative h-screen overflow-hidden">
-              <Routes>
-                <Route path="/" element={<AnimatedPages />} />
-              </Routes>
-            </main>
-            <Footer />
-            <Chatbot />
-          </div>
-        </BrowserRouter>
+        <KeycapAvoidanceProvider>
+          <BrowserRouter>
+            <div className="min-h-screen text-black dark:text-white relative">
+              <OrangePixels />
+              <CursorOrb />
+              <Navbar />
+              <main className="relative h-screen overflow-hidden">
+                <Routes>
+                  <Route path="/" element={<AnimatedPages />} />
+                </Routes>
+              </main>
+              <Footer />
+              <RoamingRobot ref={roamingRobotRef} />
+              <Chatbot onRequestOpen={handleRequestOpen} />
+            </div>
+          </BrowserRouter>
+        </KeycapAvoidanceProvider>
       </PageNavProvider>
     </ThemeProvider>
   );

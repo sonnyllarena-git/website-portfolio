@@ -5,6 +5,7 @@ import { Physics } from '@react-three/rapier';
 import { PORTFOLIO_STACK } from '../data/techStack';
 import KeyCap, { KeycapHoverContext } from './KeyCap';
 import ScreenJar, { FLOOR_Y } from './ScreenJar';
+import { useKeycapAvoidance } from '../context/KeycapAvoidanceContext';
 
 // --- Particle text: samples a name into dot positions on an offscreen canvas,
 // cached per string since the same names repeat across hovers. ---
@@ -181,6 +182,15 @@ const KeyPhysicsOverlay = () => {
     () => window.innerWidth < 768 || window.matchMedia('(prefers-reduced-motion: reduce)').matches
   );
   const hoverRef = useRef({ id: null, text: '', x: 0, y: 0, phase: null, phaseStart: 0 });
+  const avoidanceRef = useKeycapAvoidance();
+
+  // The roaming robot must never keep avoiding a keycap after this scene
+  // (Home-page-only) unmounts, so its shared position list is cleared with it.
+  useEffect(() => {
+    return () => {
+      if (avoidanceRef) avoidanceRef.current = [];
+    };
+  }, [avoidanceRef]);
 
   const keysList = useMemo(
     () =>
@@ -233,7 +243,7 @@ const KeyPhysicsOverlay = () => {
             <Physics gravity={[0, -14, 0]} colliders={false}>
               <ScreenJar />
               {keysList.map((k, index) => (
-                <KeyCap key={index} position={k.position} rotation={k.rotation} item={k.item} />
+                <KeyCap key={index} id={index} position={k.position} rotation={k.rotation} item={k.item} />
               ))}
             </Physics>
           </Suspense>

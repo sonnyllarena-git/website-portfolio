@@ -4,6 +4,7 @@ import { RoundedBox, Text, Decal } from '@react-three/drei';
 import { RigidBody } from '@react-three/rapier';
 import { Vector3, Plane } from 'three';
 import { useIconTexture } from '../hooks/useIconTexture';
+import { useKeycapAvoidance } from '../context/KeycapAvoidanceContext';
 
 // Shared with KeyPhysicsOverlay's particle-text canvas: a mutable ref (not
 // React state) so 60fps hover-position updates skip React's render cycle.
@@ -15,16 +16,18 @@ export const KeycapHoverContext = createContext(null);
 const MAX_DRAG_SPEED = 40;
 const clamp = (v, max) => Math.max(-max, Math.min(max, v));
 
-const KeyCap = ({ position, rotation, item }) => {
+const KeyCap = ({ position, rotation, item, id }) => {
   const rigidBodyRef = useRef();
   const [isDragging, setIsDragging] = useState(false);
   const [hovered, setHovered] = useState(false);
   const texture = useIconTexture(item.icon);
   const hoverRef = useContext(KeycapHoverContext);
+  const avoidanceRef = useKeycapAvoidance();
   const { camera, size, raycaster } = useThree();
   // Reused across the whole drag so we're not allocating every pointermove.
   const dragPlaneRef = useRef(new Plane(new Vector3(0, 0, 1), 0));
   const dragPointRef = useRef(new Vector3());
+  const avoidanceVectorRef = useRef(new Vector3());
 
   const handlePointerDown = (e) => {
     e.stopPropagation();
@@ -84,6 +87,19 @@ const KeyCap = ({ position, rotation, item }) => {
     vector.project(camera);
     hoverRef.current.x = (vector.x * 0.5 + 0.5) * size.width;
     hoverRef.current.y = (-(vector.y * 0.5) + 0.5) * size.height;
+  });
+
+  // Publishes this keycap's screen-space NDC position every frame so the
+  // roaming robot (a separate canvas/camera) can steer away from it. Reuses
+  // the raw NDC from this scene's own camera as an approximation of the
+  // robot canvas's NDC — close enough for a decorative avoidance behavior
+  // without needing the two cameras' projections to match exactly.
+  useFrame(() => {
+    if (!avoidanceRef || id == null || !rigidBodyRef.current) return;
+    const pos = rigidBodyRef.current.translation();
+    avoidanceVectorRef.current.set(pos.x, pos.y, pos.z);
+    avoidanceVectorRef.current.project(camera);
+    avoidanceRef.current[id] = { x: avoidanceVectorRef.current.x, y: avoidanceVectorRef.current.y };
   });
 
   const textColor = item.color === '#FF6B00' ? '#FFFFFF' : '#FF6B00';

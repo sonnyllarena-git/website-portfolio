@@ -235,7 +235,7 @@ export default function ChatWindow({
       <div className="flex items-center justify-between px-4 py-3 bg-accent text-white shrink-0">
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 rounded-full bg-white/15 overflow-hidden shrink-0" aria-hidden="true">
-            <RobotCanvas robotState="idle" variant="face" />
+            <RobotCanvas robotState="idle" />
           </div>
           <div>
             <p className="font-bold text-sm">

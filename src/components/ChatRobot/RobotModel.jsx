@@ -3,10 +3,8 @@ import { useFrame } from '@react-three/fiber';
 import { RoundedBox, Sphere, Torus, Capsule } from '@react-three/drei';
 import * as THREE from 'three';
 
-const JUMP_DURATION = 0.6;
-
-// robotState: 'idle' | 'excited' | 'jumping' | 'peering' | 'sad'
-const RobotModel = ({ robotState = 'idle', cursorPosition = null }) => {
+// robotState: 'idle' | 'excited' | 'firing'
+const RobotModel = ({ robotState = 'idle', cursorPosition = null, gunTipRef = null }) => {
   const rootRef = useRef();
   const headRef = useRef();
   const bodyRef = useRef();
@@ -98,65 +96,30 @@ const RobotModel = ({ robotState = 'idle', cursorPosition = null }) => {
         break;
       }
 
-      case 'jumping': {
-        const progress = Math.min(st / JUMP_DURATION, 1);
+      case 'firing': {
+        // A quick backward-punching recoil that decays over the first
+        // fraction of a second, then the gun arm holds its aim forward.
+        const recoil = Math.max(0, 1 - st / 0.15) * -0.18;
         if (rootRef.current) {
-          rootRef.current.position.y = Math.sin(progress * Math.PI) * 0.45;
-          rootRef.current.rotation.y += delta * 6;
-          rootRef.current.rotation.x = THREE.MathUtils.damp(rootRef.current.rotation.x, 0, 6, delta);
+          rootRef.current.position.y = THREE.MathUtils.damp(rootRef.current.position.y, 0, 8, delta);
+          rootRef.current.rotation.x = recoil;
+          rootRef.current.rotation.y = THREE.MathUtils.damp(rootRef.current.rotation.y, 0, 8, delta);
         }
         if (headRef.current) {
           headRef.current.rotation.x = THREE.MathUtils.damp(headRef.current.rotation.x, 0, 6, delta);
           headRef.current.rotation.y = THREE.MathUtils.damp(headRef.current.rotation.y, 0, 6, delta);
           headRef.current.rotation.z = THREE.MathUtils.damp(headRef.current.rotation.z, 0, 6, delta);
         }
-        if (armLeftRef.current && armRightRef.current) {
-          armLeftRef.current.rotation.z = THREE.MathUtils.damp(armLeftRef.current.rotation.z, -1.1, 8, delta);
-          armRightRef.current.rotation.z = THREE.MathUtils.damp(armRightRef.current.rotation.z, 1.1, 8, delta);
+        if (armRightRef.current) {
+          armRightRef.current.rotation.x = THREE.MathUtils.damp(armRightRef.current.rotation.x, -1.35, 12, delta);
+          armRightRef.current.rotation.z = THREE.MathUtils.damp(armRightRef.current.rotation.z, 0.1, 12, delta);
+        }
+        if (armLeftRef.current) {
+          armLeftRef.current.rotation.z = THREE.MathUtils.damp(armLeftRef.current.rotation.z, -0.35, 8, delta);
         }
         if (legLeftRef.current && legRightRef.current) {
-          legLeftRef.current.rotation.x = THREE.MathUtils.damp(legLeftRef.current.rotation.x, 0.3, 8, delta);
-          legRightRef.current.rotation.x = THREE.MathUtils.damp(legRightRef.current.rotation.x, -0.3, 8, delta);
-        }
-        break;
-      }
-
-      case 'peering': {
-        if (rootRef.current) {
-          rootRef.current.position.y = THREE.MathUtils.damp(rootRef.current.position.y, 0, 6, delta);
-          rootRef.current.rotation.x = THREE.MathUtils.damp(rootRef.current.rotation.x, 0.3, 5, delta);
-          rootRef.current.rotation.y = THREE.MathUtils.damp(rootRef.current.rotation.y, 0, 5, delta);
-        }
-        if (headRef.current) {
-          headRef.current.rotation.x = THREE.MathUtils.damp(headRef.current.rotation.x, -0.1, 5, delta);
-          headRef.current.rotation.y = Math.sin(t * 0.6) * 0.1;
-          headRef.current.rotation.z = Math.sin(t * 1.2) * 0.04;
-        }
-        if (armLeftRef.current && armRightRef.current) {
-          armLeftRef.current.rotation.z = THREE.MathUtils.damp(armLeftRef.current.rotation.z, -0.6, 5, delta);
-          armRightRef.current.rotation.z = THREE.MathUtils.damp(armRightRef.current.rotation.z, 0.6, 5, delta);
-        }
-        break;
-      }
-
-      case 'sad': {
-        if (rootRef.current) {
-          rootRef.current.position.y = THREE.MathUtils.damp(rootRef.current.position.y, -0.08, 5, delta);
-          rootRef.current.rotation.x = THREE.MathUtils.damp(rootRef.current.rotation.x, 0, 5, delta);
-          rootRef.current.rotation.y = THREE.MathUtils.damp(rootRef.current.rotation.y, 0, 5, delta);
-        }
-        if (headRef.current) {
-          headRef.current.rotation.x = THREE.MathUtils.damp(headRef.current.rotation.x, 0.35, 5, delta);
-          headRef.current.rotation.y = THREE.MathUtils.damp(headRef.current.rotation.y, 0, 5, delta);
-          headRef.current.rotation.z = Math.sin(t * 1.5) * 0.03;
-        }
-        if (armLeftRef.current && armRightRef.current) {
-          armLeftRef.current.rotation.z = THREE.MathUtils.damp(armLeftRef.current.rotation.z, -0.05, 5, delta);
-          armRightRef.current.rotation.z = THREE.MathUtils.damp(armRightRef.current.rotation.z, 0.05, 5, delta);
-        }
-        if (legLeftRef.current && legRightRef.current) {
-          legLeftRef.current.rotation.x = THREE.MathUtils.damp(legLeftRef.current.rotation.x, 0, 5, delta);
-          legRightRef.current.rotation.x = THREE.MathUtils.damp(legRightRef.current.rotation.x, 0, 5, delta);
+          legLeftRef.current.rotation.x = THREE.MathUtils.damp(legLeftRef.current.rotation.x, 0, 8, delta);
+          legRightRef.current.rotation.x = THREE.MathUtils.damp(legRightRef.current.rotation.x, 0, 8, delta);
         }
         break;
       }
@@ -266,6 +229,21 @@ const RobotModel = ({ robotState = 'idle', cursorPosition = null }) => {
         <Capsule args={[0.15, 0.5, 8, 16]} rotation={[0, 0, -0.3]}>
           <meshStandardMaterial color="#E8E8E8" roughness={0.5} metalness={0.05} />
         </Capsule>
+
+        {/* Laser gun, gripped at the hand end of the arm, barrel forward */}
+        <mesh position={[0.05, -0.34, 0.15]} rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.035, 0.05, 0.34, 8]} />
+          <meshStandardMaterial color="#1A1A1A" metalness={0.5} roughness={0.3} />
+        </mesh>
+        <mesh position={[0.05, -0.24, 0.08]}>
+          <boxGeometry args={[0.09, 0.11, 0.12]} />
+          <meshStandardMaterial color="#2A2A2A" metalness={0.4} roughness={0.35} />
+        </mesh>
+        <group ref={gunTipRef} position={[0.05, -0.34, 0.33]}>
+          <Sphere args={[0.045, 8, 8]}>
+            <meshStandardMaterial color="#00FFFF" emissive="#00FFFF" emissiveIntensity={1.6} />
+          </Sphere>
+        </group>
       </group>
 
       {/* ── LEGS ── */}
