@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback, Suspense } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas } from '@react-three/fiber';
 import { ContactShadows } from '@react-three/drei';
 import { Physics } from '@react-three/rapier';
 import { PORTFOLIO_STACK } from '../data/techStack';
@@ -9,91 +9,6 @@ import { useKeycapAvoidance } from '../context/KeycapAvoidanceContext';
 import { WallCollisionEffect } from './effects/WallCollisionEffect';
 
 const MAX_WALL_HIT_EFFECTS = 6; // caps runaway spawns if a keycap gets pinned against a wall
-
-// Invisible-until-touched wireframe left/right walls matching ScreenJar's
-// real x=±12 colliders — fully transparent at rest, flashing in as a
-// force-field grid at whichever side a keycap just hit, then fading back
-// out. A solid translucent plane was tried first and just looked like a
-// flat color wash; a grid of thin lines reads as a real wall surface
-// instead (matches the same fix applied to the roaming robot's boundary).
-const WALL_COLOR = '#00FFFF';
-const WALL_AMBIENT_OPACITY = 0; // fully invisible at rest — see file header comment
-const WALL_FLASH_PEAK_OPACITY = 0.5;
-const WALL_FLASH_DECAY = 0.6; // seconds for a flash to fade back out
-const WALL_X = 12; // matches ScreenJar's jar-wall-x collider position
-const WALL_DEPTH_SPAN = 8; // matches the jar's front/back wall spacing (z: -4 to 4)
-const WALL_HEIGHT = 14; // a visible chunk of the wall's real (80-unit) height
-const WALL_GRID_COLS = 6;
-const WALL_GRID_ROWS = 6;
-
-function buildKeycapWallGrid(x) {
-  const zMin = -WALL_DEPTH_SPAN / 2;
-  const zMax = WALL_DEPTH_SPAN / 2;
-  const yMin = FLOOR_Y;
-  const yMax = FLOOR_Y + WALL_HEIGHT;
-  const verts = [];
-  for (let i = 0; i <= WALL_GRID_COLS; i++) {
-    const z = zMin + ((zMax - zMin) * i) / WALL_GRID_COLS;
-    verts.push(x, yMin, z, x, yMax, z);
-  }
-  for (let j = 0; j <= WALL_GRID_ROWS; j++) {
-    const y = yMin + ((yMax - yMin) * j) / WALL_GRID_ROWS;
-    verts.push(x, y, zMin, x, y, zMax);
-  }
-  return new Float32Array(verts);
-}
-
-function KeycapBoundaryWalls({ flashRef }) {
-  const leftMaterialRef = useRef();
-  const rightMaterialRef = useRef();
-  const geometries = useMemo(
-    () => ({ left: buildKeycapWallGrid(-WALL_X), right: buildKeycapWallGrid(WALL_X) }),
-    []
-  );
-
-  useFrame((_, delta) => {
-    const flash = flashRef.current;
-    flash.left = Math.max(0, flash.left - delta / WALL_FLASH_DECAY);
-    flash.right = Math.max(0, flash.right - delta / WALL_FLASH_DECAY);
-    if (leftMaterialRef.current) {
-      leftMaterialRef.current.opacity = WALL_AMBIENT_OPACITY + flash.left * (WALL_FLASH_PEAK_OPACITY - WALL_AMBIENT_OPACITY);
-    }
-    if (rightMaterialRef.current) {
-      rightMaterialRef.current.opacity = WALL_AMBIENT_OPACITY + flash.right * (WALL_FLASH_PEAK_OPACITY - WALL_AMBIENT_OPACITY);
-    }
-  });
-
-  return (
-    <>
-      <lineSegments>
-        <bufferGeometry>
-          <bufferAttribute attach="attributes-position" args={[geometries.left, 3]} />
-        </bufferGeometry>
-        <lineBasicMaterial
-          ref={leftMaterialRef}
-          color={WALL_COLOR}
-          transparent
-          opacity={WALL_AMBIENT_OPACITY}
-          toneMapped={false}
-          depthWrite={false}
-        />
-      </lineSegments>
-      <lineSegments>
-        <bufferGeometry>
-          <bufferAttribute attach="attributes-position" args={[geometries.right, 3]} />
-        </bufferGeometry>
-        <lineBasicMaterial
-          ref={rightMaterialRef}
-          color={WALL_COLOR}
-          transparent
-          opacity={WALL_AMBIENT_OPACITY}
-          toneMapped={false}
-          depthWrite={false}
-        />
-      </lineSegments>
-    </>
-  );
-}
 
 // --- Particle text: samples a name into dot positions on an offscreen canvas,
 // cached per string since the same names repeat across hovers. ---
@@ -273,10 +188,8 @@ const KeyPhysicsOverlay = () => {
   const avoidanceRef = useKeycapAvoidance();
   const [wallHitEffects, setWallHitEffects] = useState([]);
   const hitIdRef = useRef(0);
-  const wallFlashRef = useRef({ left: 0, right: 0 });
 
-  const handleWallHit = useCallback(({ side, position }) => {
-    wallFlashRef.current[side] = 1;
+  const handleWallHit = useCallback(({ position }) => {
     setWallHitEffects((prev) => {
       const next = [...prev, { id: hitIdRef.current++, position }];
       return next.length > MAX_WALL_HIT_EFFECTS ? next.slice(next.length - MAX_WALL_HIT_EFFECTS) : next;
@@ -337,8 +250,6 @@ const KeyPhysicsOverlay = () => {
           </mesh>
 
           <ContactShadows position={[0, FLOOR_Y + 0.05, 0]} opacity={0.5} blur={2} scale={28} far={8} />
-
-          <KeycapBoundaryWalls flashRef={wallFlashRef} />
 
           <Suspense fallback={null}>
             <Physics gravity={[0, -14, 0]} colliders={false}>

@@ -1,10 +1,11 @@
-import { forwardRef, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Vector3 } from 'three';
 import RobotModel from '../ChatRobot/RobotModel';
 import RobotPhysics, { BASE_BOUNDS, computeDynamicBounds } from './RobotPhysics';
 import { useKeycapAvoidance } from '../../context/KeycapAvoidanceContext';
 import { WallCollisionEffect } from '../effects/WallCollisionEffect';
+import { EYE_LEVEL_FROM_TOP } from '../../utils/perspective';
 
 const CAMERA_FOV = 50;
 const ROBOT_SCALE = 0.28;
@@ -22,17 +23,52 @@ const BEHIND_LAYER_Z = 15;
 // pos.z is the model's real distance from a camera at the origin, so the
 // PerspectiveCamera's own projection gives correct "far = small" perspective
 // — no manual screen-space math needed like a 2D-canvas approach would.
+// Uses the nominal CAMERA_FOV constant rather than the live camera.fov,
+// which applyEyeLevelShift() below deliberately inflates — see its comment.
 function worldFromPhysics(pos, camera) {
-  const vFov = (camera.fov * Math.PI) / 180;
+  const vFov = (CAMERA_FOV * Math.PI) / 180;
   const halfHeight = Math.tan(vFov / 2) * pos.z;
   const halfWidth = halfHeight * camera.aspect;
   return [pos.x * halfWidth, pos.y * halfHeight, -pos.z];
 }
 
+// Shifts the rendered frame so "straight ahead" (where every depth
+// converges on screen, i.e. the robot scene's vanishing point) lands at
+// EYE_LEVEL_FROM_TOP instead of dead center (0.5) — matching the
+// floor-perspective grid on the About page (src/utils/perspective.js)
+// instead of an independently-tuned view. Done by rendering a taller
+// virtual frame and outputting only an off-center slice of it (the same
+// tilt-shift/perspective-control technique architecture photographers use
+// to move a horizon without keystoning), rather than pitching the camera,
+// which would tilt verticals too. camera.fov is inflated to cover that
+// taller virtual frame — worldFromPhysics/sampleWallEdge deliberately use
+// the nominal CAMERA_FOV constant instead, since that's the true output FOV
+// once this off-center slice is taken.
+function applyEyeLevelShift(camera, width, height) {
+  if (!width || !height) return;
+
+  const fullHeight = 2 * (1 - EYE_LEVEL_FROM_TOP) * height;
+  const offsetY = fullHeight - height;
+
+  const halfFov = (CAMERA_FOV * Math.PI) / 180 / 2;
+  const compensatedHalfFov = Math.atan(Math.tan(halfFov) * (fullHeight / height));
+  camera.fov = (compensatedHalfFov * 180) / Math.PI * 2;
+  camera.setViewOffset(width, fullHeight, 0, offsetY, width, height);
+  camera.updateProjectionMatrix();
+}
+
+// How far applyEyeLevelShift's projection shift moves the vanishing point in
+// output-NDC-y terms. pixelToNDC must subtract this so a target pixel (e.g.
+// the chat button's screen position) still round-trips through
+// worldFromPhysics to the same real screen position once the camera's
+// projection is off-center — without it the fired beam would visibly land
+// above or below its intended target by the eye-level shift amount.
+const EYE_LEVEL_NDC_SHIFT = 1 - 2 * EYE_LEVEL_FROM_TOP;
+
 function pixelToNDC(px, py) {
   return {
     x: (px / window.innerWidth) * 2 - 1,
-    y: -(py / window.innerHeight) * 2 + 1,
+    y: -(py / window.innerHeight) * 2 + 1 - EYE_LEVEL_NDC_SHIFT,
   };
 }
 
@@ -151,6 +187,12 @@ const RoamingScene = forwardRef(function RoamingScene(_props, ref) {
   const startVecRef = useRef(new Vector3());
   const endVecRef = useRef(new Vector3());
   const dirVecRef = useRef(new Vector3());
+  const { camera, size } = useThree();
+
+  useEffect(() => {
+    applyEyeLevelShift(camera, size.width, size.height);
+    return () => camera.clearViewOffset();
+  }, [camera, size.width, size.height]);
 
   useImperativeHandle(ref, () => ({
     fireLaserAt(px, py, onHit) {
