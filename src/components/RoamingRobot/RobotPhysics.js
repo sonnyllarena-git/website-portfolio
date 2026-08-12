@@ -60,6 +60,11 @@ export class RobotPhysics {
   updateAvoidance(step) {
     if (!this.keycaps.length) return;
 
+    // Must match the `> avoidanceRadius * 1.6` exit check in update() below —
+    // otherwise dist sits in a dead band (no force, but not far enough to
+    // exit either) where the robot decelerates to zero and freezes in place.
+    const outerRadius = this.avoidanceRadius * 1.6;
+
     let avoidX = 0;
     let avoidY = 0;
     for (const kc of this.keycaps) {
@@ -67,8 +72,8 @@ export class RobotPhysics {
       const dy = this.pos.y - kc.y;
       const dist = Math.hypot(dx, dy) || 0.0001;
 
-      if (dist < this.avoidanceRadius) {
-        const strength = (1 - dist / this.avoidanceRadius) * this.avoidanceForce;
+      if (dist < outerRadius) {
+        const strength = (1 - dist / outerRadius) * this.avoidanceForce;
         avoidX += (dx / dist) * strength;
         avoidY += (dy / dist) * strength;
 

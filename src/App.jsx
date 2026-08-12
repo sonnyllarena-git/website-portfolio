@@ -72,7 +72,7 @@ function App() {
               <OrangePixels />
               <CursorOrb />
               <Navbar />
-              <main className="relative h-screen overflow-hidden">
+              <main className="relative z-20 h-screen overflow-hidden">
                 <Routes>
                   <Route path="/" element={<AnimatedPages />} />
                 </Routes>
