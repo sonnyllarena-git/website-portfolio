@@ -27,11 +27,17 @@ export default function LogoStack({ projects, currentProject, onSelect }) {
             aria-label={isFront ? undefined : `Go to ${project.title}`}
             initial={false}
             animate={{ scale, y, opacity }}
-            whileHover={isFront ? undefined : { scale: scale + 0.01, opacity: opacity + 0.05 }}
+            whileHover={
+              isFront
+                ? { scale: scale * 1.1 }
+                : { scale: scale + 0.01, opacity: opacity + 0.05 }
+            }
             transition={{ duration: 0.4, ease: CARD_EASE }}
             style={{ zIndex: total - layer }}
-            className={`group absolute inset-0 rounded-2xl overflow-hidden shadow-2xl ${
-              isFront ? 'cursor-default' : 'cursor-pointer'
+            className={`group absolute inset-0 rounded-2xl overflow-hidden shadow-2xl transition-[filter] duration-300 ease-in-out ${
+              isFront
+                ? 'cursor-default hover:drop-shadow-[0_0_6px_rgba(255,107,53,0.6)]'
+                : 'cursor-pointer'
             }`}
           >
             <img
