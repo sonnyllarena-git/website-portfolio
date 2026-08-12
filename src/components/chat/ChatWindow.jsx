@@ -14,6 +14,7 @@ import {
 import ChatMessageText from './ChatMessageText';
 import VoiceSettingsPanel from './VoiceSettingsPanel';
 import MultipleChoiceOptions from './MultipleChoiceOptions';
+import RobotCanvas from '../ChatRobot/RobotCanvas';
 
 function formatTime(date) {
   return date.toLocaleTimeString(undefined, {
@@ -232,13 +233,18 @@ export default function ChatWindow({
       className="chat-window-glow fixed z-50 right-5 bottom-[168px] w-[calc(100vw-40px)] h-[60vh] sm:w-[350px] sm:h-[450px] lg:w-[400px] lg:h-[500px] rounded-xl shadow-2xl flex flex-col overflow-hidden bg-bg-light dark:bg-bg-dark text-black dark:text-white"
     >
       <div className="flex items-center justify-between px-4 py-3 bg-accent text-white shrink-0">
-        <div>
-          <p className="font-bold text-sm">
-            {isSettingsOpen ? 'Voice Settings' : "Sonny's Assistant"}
-          </p>
-          <p className="text-[11px] text-white/80">
-            {isSettingsOpen ? 'Speak, listen, customize' : 'Usually replies instantly'}
-          </p>
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-full bg-white/15 overflow-hidden shrink-0" aria-hidden="true">
+            <RobotCanvas robotState="idle" variant="face" />
+          </div>
+          <div>
+            <p className="font-bold text-sm">
+              {isSettingsOpen ? 'Voice Settings' : "Sonny's Assistant"}
+            </p>
+            <p className="text-[11px] text-white/80">
+              {isSettingsOpen ? 'Speak, listen, customize' : 'Usually replies instantly'}
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-1">
           {!ended && (
