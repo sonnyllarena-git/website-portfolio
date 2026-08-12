@@ -73,6 +73,8 @@ export const PROJECTS = [
     github: 'https://github.com/sonnyllarena-git/restaurant-pos-system-app',
     tech: ['React', 'Electron', 'SQLite', 'Node.js'],
     image: restaurantPosImage,
+    keyMetric: 'Cash-first POS built for offline-first restaurant floors',
+    features: ['Order Management', 'Inventory Tracking', 'Sales Reports', 'Kitchen Display'],
   },
   {
     id: 2,
@@ -82,6 +84,8 @@ export const PROJECTS = [
     github: 'https://github.com/sonnyllarena-git/expenses-tracker-app',
     tech: ['React Native', 'Expo Router', 'Drizzle ORM', 'SQLite'],
     image: expenseTrackerImage,
+    keyMetric: 'Full budgeting suite in a single mobile app',
+    features: ['Budget Planning', 'Recurring Expenses', 'Receipt Photos', 'Spending Analytics'],
   },
   {
     id: 3,
@@ -91,6 +95,8 @@ export const PROJECTS = [
     github: 'https://github.com/sonnyllarena-git/dental-clinic-crm',
     tech: ['React', 'Node.js', 'PostgreSQL', 'Stripe'],
     image: dentalClinicImage,
+    keyMetric: 'Production system running a full dental practice',
+    features: ['Patient Records', 'Scheduling', 'Treatment Planning', 'Billing & Inventory'],
   },
   {
     id: 4,
@@ -100,6 +106,8 @@ export const PROJECTS = [
     image: onboardingAppImage,
     github: 'https://github.com/sonnyllarena-git/tcp-onboarding-app',
     tech: ['React', 'Node.js', 'PostgreSQL', 'Real-time APIs'],
+    keyMetric: '99.9% uptime SLA in production',
+    features: ['Real-Time Platform Sync', 'Self-Service Error Recovery', 'Zero-to-Production Build', 'Enterprise-Grade Reliability'],
   },
 ];
 
