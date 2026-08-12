@@ -4,7 +4,7 @@ import { ContactShadows } from '@react-three/drei';
 import { Physics } from '@react-three/rapier';
 import { PORTFOLIO_STACK } from '../data/techStack';
 import KeyCap, { KeycapHoverContext } from './KeyCap';
-import ScreenJar from './ScreenJar';
+import ScreenJar, { FLOOR_Y } from './ScreenJar';
 
 // --- Particle text: samples a name into dot positions on an offscreen canvas,
 // cached per string since the same names repeat across hovers. ---
@@ -214,11 +214,20 @@ const KeyPhysicsOverlay = () => {
             castShadow
             shadow-mapSize-width={1024}
             shadow-mapSize-height={1024}
+            shadow-camera-left={-16}
+            shadow-camera-right={16}
+            shadow-camera-top={16}
+            shadow-camera-bottom={-16}
           />
           <pointLight position={[-10, -10, -10]} color="#FF6B00" intensity={0.5} />
           <pointLight position={[10, 10, 10]} color="#ffffff" intensity={0.3} />
 
-          <ContactShadows position={[0, -7.9, 0]} opacity={0.5} blur={2} scale={28} far={8} />
+          <mesh position={[0, FLOOR_Y, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+            <planeGeometry args={[34, 16]} />
+            <meshStandardMaterial color="#1a1a1a" transparent opacity={0.22} />
+          </mesh>
+
+          <ContactShadows position={[0, FLOOR_Y + 0.05, 0]} opacity={0.5} blur={2} scale={28} far={8} />
 
           <Suspense fallback={null}>
             <Physics gravity={[0, -14, 0]} colliders={false}>

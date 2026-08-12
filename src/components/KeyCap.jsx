@@ -2,12 +2,18 @@ import React, { useRef, useState, useContext, createContext } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { RoundedBox, Text, Decal } from '@react-three/drei';
 import { RigidBody } from '@react-three/rapier';
-import { Vector3 } from 'three';
+import { Vector3, Plane } from 'three';
 import { useIconTexture } from '../hooks/useIconTexture';
 
 // Shared with KeyPhysicsOverlay's particle-text canvas: a mutable ref (not
 // React state) so 60fps hover-position updates skip React's render cycle.
 export const KeycapHoverContext = createContext(null);
+
+// Hard velocity cap — a bad/degenerate drag point one frame must never be
+// able to fling a body into a runaway trajectory (positions were observed
+// hitting ~1e33 without this, once a single bad frame got integrated).
+const MAX_DRAG_SPEED = 40;
+const clamp = (v, max) => Math.max(-max, Math.min(max, v));
 
 const KeyCap = ({ position, rotation, item }) => {
   const rigidBodyRef = useRef();
@@ -15,11 +21,22 @@ const KeyCap = ({ position, rotation, item }) => {
   const [hovered, setHovered] = useState(false);
   const texture = useIconTexture(item.icon);
   const hoverRef = useContext(KeycapHoverContext);
-  const { camera, size } = useThree();
+  const { camera, size, raycaster } = useThree();
+  // Reused across the whole drag so we're not allocating every pointermove.
+  const dragPlaneRef = useRef(new Plane(new Vector3(0, 0, 1), 0));
+  const dragPointRef = useRef(new Vector3());
 
   const handlePointerDown = (e) => {
     e.stopPropagation();
     e.target.setPointerCapture(e.pointerId);
+    // R3F's pointer-capture events only recompute a hit point while the ray
+    // still directly intersects this (small, moving) mesh — the instant it
+    // doesn't, the event replays a frozen point from the original grab,
+    // which is why dragging used to nudge once then stop tracking the
+    // cursor. Dragging on our own fixed depth-plane sidesteps that entirely.
+    const pos = rigidBodyRef.current?.translation();
+    const z = pos && Number.isFinite(pos.z) ? pos.z : 0;
+    dragPlaneRef.current.set(new Vector3(0, 0, 1), -z);
     setIsDragging(true);
     rigidBodyRef.current?.wakeUp();
   };
@@ -30,13 +47,14 @@ const KeyCap = ({ position, rotation, item }) => {
     setIsDragging(false);
   };
 
-  const handlePointerMove = (e) => {
+  const handlePointerMove = () => {
     if (!isDragging || !rigidBodyRef.current) return;
-    const { point } = e;
+    const hit = raycaster.ray.intersectPlane(dragPlaneRef.current, dragPointRef.current);
+    if (!hit || !Number.isFinite(hit.x) || !Number.isFinite(hit.y)) return;
     const currentPos = rigidBodyRef.current.translation();
     rigidBodyRef.current.setLinvel({
-      x: (point.x - currentPos.x) * 18,
-      y: (point.y - currentPos.y) * 18,
+      x: clamp((hit.x - currentPos.x) * 18, MAX_DRAG_SPEED),
+      y: clamp((hit.y - currentPos.y) * 18, MAX_DRAG_SPEED),
       z: 0,
     }, true);
   };
