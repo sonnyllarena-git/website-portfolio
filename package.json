@@ -10,12 +10,16 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@react-three/drei": "^10.7.8",
+    "@react-three/fiber": "^9.7.0",
+    "@react-three/rapier": "^2.2.0",
     "@supabase/supabase-js": "^2.112.2",
     "framer-motion": "^13.1.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-icons": "^5.7.0",
-    "react-router-dom": "^7.18.2"
+    "react-router-dom": "^7.18.2",
+    "three": "^0.185.1"
   },
   "devDependencies": {
     "@types/react": "^19.2.17",

@@ -1,6 +1,9 @@
+import { lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { PROFILE, SOCIAL_LINKS } from '../utils/constants';
 import { CurvedLine, OrangeSquare } from './Decorations';
+
+const KeyPhysicsOverlay = lazy(() => import('./KeyPhysicsOverlay'));
 
 export default function Hero() {
   return (
@@ -8,6 +11,10 @@ export default function Hero() {
       id="home"
       className="relative min-h-screen flex items-center pt-24 pb-16 overflow-hidden"
     >
+      <Suspense fallback={null}>
+        <KeyPhysicsOverlay />
+      </Suspense>
+
       <CurvedLine className="hidden lg:block absolute top-24 right-10 opacity-70" />
       <OrangeSquare className="hidden lg:block absolute top-40 left-16" size={18} delay={0.3} />
       <OrangeSquare className="hidden lg:block absolute bottom-32 right-1/3" size={12} delay={0.6} />
