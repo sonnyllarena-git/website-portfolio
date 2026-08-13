@@ -2,10 +2,12 @@ import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState }
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Vector3 } from 'three';
 import RobotModel from '../ChatRobot/RobotModel';
-import RobotPhysics, { BASE_BOUNDS, computeDynamicBounds } from './RobotPhysics';
+import RobotPhysics, { computeDynamicBounds } from './RobotPhysics';
 import { useKeycapAvoidance } from '../../context/KeycapAvoidanceContext';
+import { useRobotPosition } from '../../context/RobotPositionContext';
 import { WallCollisionEffect } from '../effects/WallCollisionEffect';
 import { EYE_LEVEL_FROM_TOP } from '../../utils/perspective';
+import { useSceneArena } from '../../utils/sceneBounds';
 
 const CAMERA_FOV = 50;
 const ROBOT_SCALE = 0.28;
@@ -115,27 +117,36 @@ const WALL_SIDE_BY_HIT = { 'x:min': 'left', 'x:max': 'right', 'y:max': 'top', 'y
 
 // Returns the two edge points (in world space) of the given wall side at a
 // given z — e.g. for 'left', the top-left and bottom-left corners of the
-// confinement box at that depth.
-function sampleWallEdge(side, z, camera) {
-  const bounds = computeDynamicBounds(z);
+// confinement box at that depth. `bounds` is the live roaming bounds (see
+// RobotPhysics.updateBounds) — passed explicitly rather than defaulted so
+// the drawn wireframe can never silently drift from the bounds actually
+// enforced by the physics sim.
+function sampleWallEdge(side, z, camera, bounds) {
+  const dynamicBounds = computeDynamicBounds(z, bounds);
   if (side === 'left' || side === 'right') {
-    const x = side === 'left' ? bounds.x[0] : bounds.x[1];
-    return [worldFromPhysics({ x, y: bounds.y[1], z }, camera), worldFromPhysics({ x, y: bounds.y[0], z }, camera)];
+    const x = side === 'left' ? dynamicBounds.x[0] : dynamicBounds.x[1];
+    return [
+      worldFromPhysics({ x, y: dynamicBounds.y[1], z }, camera),
+      worldFromPhysics({ x, y: dynamicBounds.y[0], z }, camera),
+    ];
   }
-  const y = side === 'top' ? bounds.y[1] : bounds.y[0];
-  return [worldFromPhysics({ x: bounds.x[1], y, z }, camera), worldFromPhysics({ x: bounds.x[0], y, z }, camera)];
+  const y = side === 'top' ? dynamicBounds.y[1] : dynamicBounds.y[0];
+  return [
+    worldFromPhysics({ x: dynamicBounds.x[1], y, z }, camera),
+    worldFromPhysics({ x: dynamicBounds.x[0], y, z }, camera),
+  ];
 }
 
 // Two rails (continuous lines tracing each edge from near to far — the
 // converging lines that read as "receding into the distance") plus several
 // rungs (cross-sections at fixed depths, like the ribs of a funnel).
-function buildWallWireframe(side, camera) {
-  const [zMin, zMax] = BASE_BOUNDS.z;
+function buildWallWireframe(side, camera, bounds) {
+  const [zMin, zMax] = bounds.z;
   const verts = [];
   let prev = null;
   for (let i = 0; i <= WALL_RAIL_SEGMENTS; i++) {
     const z = zMin + ((zMax - zMin) * i) / WALL_RAIL_SEGMENTS;
-    const [a, b] = sampleWallEdge(side, z, camera);
+    const [a, b] = sampleWallEdge(side, z, camera, bounds);
     if (prev) {
       verts.push(...prev[0], ...a);
       verts.push(...prev[1], ...b);
@@ -144,7 +155,7 @@ function buildWallWireframe(side, camera) {
   }
   for (let i = 0; i <= WALL_RUNG_COUNT; i++) {
     const z = zMin + ((zMax - zMin) * i) / WALL_RUNG_COUNT;
-    const [a, b] = sampleWallEdge(side, z, camera);
+    const [a, b] = sampleWallEdge(side, z, camera, bounds);
     verts.push(...a, ...b);
   }
   return new Float32Array(verts);
@@ -154,12 +165,15 @@ function buildWallWireframe(side, camera) {
 // to 1 by RoamingScene on a matching collision and decayed here every
 // frame — avoids per-hit React state since the walls themselves are static,
 // persistent meshes that only need their material opacity animated.
-function BoundaryWalls({ flashRef }) {
+function BoundaryWalls({ flashRef, bounds }) {
   const { camera } = useThree();
-  // Computed once at mount from the camera's current aspect — a resize
-  // would leave this very slightly out of sync with the real bounds, an
-  // acceptable approximation for a decorative boundary visualization.
-  const geometries = useMemo(() => Object.fromEntries(WALL_SIDES.map((side) => [side, buildWallWireframe(side, camera)])), []); // eslint-disable-line react-hooks/exhaustive-deps
+  // Rebuilt whenever the live bounds change (e.g. a window resize recomputes
+  // them from the real navbar/footer edges — see RoamingRobot's useSceneArena
+  // usage), so the drawn wireframe always matches what's actually enforced.
+  const geometries = useMemo(
+    () => Object.fromEntries(WALL_SIDES.map((side) => [side, buildWallWireframe(side, camera, bounds)])),
+    [camera, bounds]
+  );
   const materialRefs = useRef({});
 
   useFrame((_, delta) => {
@@ -212,12 +226,28 @@ const RoamingScene = forwardRef(function RoamingScene(_props, ref) {
   const dirVecRef = useRef(new Vector3());
   const bulletPosVecRef = useRef(new Vector3());
   const trailMidVecRef = useRef(new Vector3());
+  const projectedPosVecRef = useRef(new Vector3());
+  const robotPositionRef = useRobotPosition();
+  const arena = useSceneArena();
+  const [robotBounds, setRobotBounds] = useState(() => physicsRef.current.bounds);
   const { camera, size } = useThree();
 
   useEffect(() => {
     applyEyeLevelShift(camera, size.width, size.height);
     return () => camera.clearViewOffset();
   }, [camera, size.width, size.height]);
+
+  // Recomputes the roaming box from the real navbar/footer screen edges
+  // (see App.jsx for those elements) whenever the arena changes — replaces
+  // the old hand-tuned BASE_BOUNDS.y approximation with an exact one, and
+  // widens x to (nearly) the full viewport width, per the shared "framewire"
+  // both this box and the keycap jar's walls (ScreenJar.jsx) now derive from.
+  useEffect(() => {
+    const boundsX = [pixelToNDC(arena.left, 0).x, pixelToNDC(arena.right, 0).x];
+    const boundsY = [pixelToNDC(0, arena.bottom).y, pixelToNDC(0, arena.top).y];
+    physicsRef.current.updateBounds(boundsX, boundsY);
+    setRobotBounds(physicsRef.current.bounds);
+  }, [arena]);
 
   useImperativeHandle(ref, () => ({
     fireLaserAt(px, py, onHit) {
@@ -265,6 +295,18 @@ const RoamingScene = forwardRef(function RoamingScene(_props, ref) {
     if (groupRef.current) {
       const [x, y, z] = worldFromPhysics(physicsRef.current.pos, state.camera);
       groupRef.current.position.set(x, y, z);
+
+      // Publishes the robot's real, camera-projected screen NDC (not the
+      // raw physicsRef.current.pos, which is pre-scaled for THIS camera's
+      // eye-level-shift correction and would land wrong through any other
+      // camera) so RobotProxyBody — inside the keycap jar's own, differently
+      // -projected camera — can track where the robot actually is on screen.
+      if (robotPositionRef) {
+        projectedPosVecRef.current.copy(groupRef.current.position).project(state.camera);
+        robotPositionRef.current.x = projectedPosVecRef.current.x;
+        robotPositionRef.current.y = projectedPosVecRef.current.y;
+        robotPositionRef.current.active = true;
+      }
     }
 
     if (!bulletRef.current || !bulletTrailRef.current) return;
@@ -311,7 +353,7 @@ const RoamingScene = forwardRef(function RoamingScene(_props, ref) {
 
   return (
     <>
-      <BoundaryWalls flashRef={wallFlashRef} />
+      <BoundaryWalls flashRef={wallFlashRef} bounds={robotBounds} />
       <group ref={groupRef}>
         <group scale={ROBOT_SCALE}>
           <RobotModel robotState={robotState} gunTipRef={gunTipRef} />

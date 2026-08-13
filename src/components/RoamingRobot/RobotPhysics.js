@@ -50,7 +50,11 @@ export class RobotPhysics {
   constructor() {
     this.pos = { x: 0, y: 0.1, z: 6.5 };
     this.vel = { x: 0, y: 0, z: 0 };
-    this.bounds = BASE_BOUNDS;
+    // A fresh per-instance copy, never the shared BASE_BOUNDS reference —
+    // updateBounds() below replaces these arrays at runtime (e.g. from the
+    // real navbar/footer screen edges), and BASE_BOUNDS must stay untouched
+    // since computeDynamicBounds() elsewhere still reads it as a default.
+    this.bounds = { x: [...BASE_BOUNDS.x], y: [...BASE_BOUNDS.y], z: [...BASE_BOUNDS.z] };
 
     this.damping = 0.965;
     this.maxSpeed = 0.016;
@@ -164,6 +168,14 @@ export class RobotPhysics {
 
   calculateDynamicBounds(z) {
     return computeDynamicBounds(z, this.bounds, this.depthConfinement);
+  }
+
+  // Replaces the roaming x/y bounds with new [min,max] arrays — always whole
+  // new arrays, never mutating the existing ones in place, so a stale
+  // reference elsewhere can't end up silently sharing (and corrupting)
+  // state with the live bounds. z (depth confinement) is left untouched.
+  updateBounds(x, y) {
+    this.bounds = { x: [...x], y: [...y], z: this.bounds.z };
   }
 
   triggerWallCollision(axis, direction, bounds) {

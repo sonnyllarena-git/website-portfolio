@@ -4,9 +4,11 @@ import { ContactShadows } from '@react-three/drei';
 import { Physics } from '@react-three/rapier';
 import { PORTFOLIO_STACK } from '../data/techStack';
 import KeyCap, { KeycapHoverContext } from './KeyCap';
-import ScreenJar, { FLOOR_Y } from './ScreenJar';
+import ScreenJar, { useJarFloorBounds } from './ScreenJar';
+import RobotProxyBody from './RobotProxyBody';
 import { useKeycapAvoidance } from '../context/KeycapAvoidanceContext';
 import { WallCollisionEffect } from './effects/WallCollisionEffect';
+import { useSceneArena } from '../utils/sceneBounds';
 
 const MAX_WALL_HIT_EFFECTS = 6; // caps runaway spawns if a keycap gets pinned against a wall
 
@@ -177,6 +179,25 @@ function ParticleTextCanvas({ hoverRef }) {
   return <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none z-50" />;
 }
 
+// Visible ground plane + contact-shadow catcher, sized/positioned to match
+// ScreenJar's actual (dynamic) floor collider — kept in lockstep via the
+// same useJarFloorBounds() hook so the rendered ground never visually
+// detaches from where keycaps actually come to rest.
+function JarFloor({ arena }) {
+  const { floorY, halfWidth, centerX } = useJarFloorBounds(arena);
+  const width = halfWidth * 2;
+
+  return (
+    <>
+      <mesh position={[centerX, floorY, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[width, 16]} />
+        <meshStandardMaterial color="#1a1a1a" transparent opacity={0.22} />
+      </mesh>
+      <ContactShadows position={[centerX, floorY + 0.05, 0]} opacity={0.5} blur={2} scale={[width, 16]} far={8} />
+    </>
+  );
+}
+
 // Decorative physics background: every skill keycap drops in from above the
 // frame and settles at the bottom. Skipped on mobile (perf) and when the
 // user prefers reduced motion.
@@ -188,6 +209,7 @@ const KeyPhysicsOverlay = () => {
   const avoidanceRef = useKeycapAvoidance();
   const [wallHitEffects, setWallHitEffects] = useState([]);
   const hitIdRef = useRef(0);
+  const arena = useSceneArena();
 
   const handleWallHit = useCallback(({ position }) => {
     setWallHitEffects((prev) => {
@@ -244,16 +266,12 @@ const KeyPhysicsOverlay = () => {
           <pointLight position={[-10, -10, -10]} color="#FF6B00" intensity={0.5} />
           <pointLight position={[10, 10, 10]} color="#ffffff" intensity={0.3} />
 
-          <mesh position={[0, FLOOR_Y, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-            <planeGeometry args={[34, 16]} />
-            <meshStandardMaterial color="#1a1a1a" transparent opacity={0.22} />
-          </mesh>
-
-          <ContactShadows position={[0, FLOOR_Y + 0.05, 0]} opacity={0.5} blur={2} scale={28} far={8} />
+          <JarFloor arena={arena} />
 
           <Suspense fallback={null}>
             <Physics gravity={[0, -14, 0]} colliders={false}>
-              <ScreenJar />
+              <ScreenJar arena={arena} />
+              <RobotProxyBody />
               {keysList.map((k, index) => (
                 <KeyCap
                   key={index}

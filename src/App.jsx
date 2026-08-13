@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ThemeProvider } from './context/ThemeContext';
 import { PageNavProvider, usePageNav } from './context/PageContext';
 import { KeycapAvoidanceProvider } from './context/KeycapAvoidanceContext';
+import { RobotPositionProvider } from './context/RobotPositionContext';
 import { pageVariants } from './components/PageTransition';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -67,21 +68,23 @@ function App() {
     <ThemeProvider>
       <PageNavProvider>
         <KeycapAvoidanceProvider>
-          <BrowserRouter>
-            <div className="min-h-screen text-black dark:text-white relative">
-              <OrangePixels />
-              <CursorOrb />
-              <Navbar />
-              <main className="relative z-20 h-screen overflow-hidden">
-                <Routes>
-                  <Route path="/" element={<AnimatedPages />} />
-                </Routes>
-              </main>
-              <Footer />
-              <RoamingRobot ref={roamingRobotRef} />
-              <Chatbot onRequestOpen={handleRequestOpen} />
-            </div>
-          </BrowserRouter>
+          <RobotPositionProvider>
+            <BrowserRouter>
+              <div className="min-h-screen text-black dark:text-white relative">
+                <OrangePixels />
+                <CursorOrb />
+                <Navbar />
+                <main className="relative z-20 h-screen overflow-hidden">
+                  <Routes>
+                    <Route path="/" element={<AnimatedPages />} />
+                  </Routes>
+                </main>
+                <Footer />
+                <RoamingRobot ref={roamingRobotRef} />
+                <Chatbot onRequestOpen={handleRequestOpen} />
+              </div>
+            </BrowserRouter>
+          </RobotPositionProvider>
         </KeycapAvoidanceProvider>
       </PageNavProvider>
     </ThemeProvider>

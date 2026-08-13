@@ -62,13 +62,17 @@ const KeyCap = ({ position, rotation, item, id, onWallHit }) => {
     }, true);
   };
 
-  // Only the jar's x-axis (left/right) walls carry the electric wall-hit
-  // effect — see ScreenJar.jsx for why the floor and z-axis walls are excluded.
-  // Left vs right is inferred from which side of the (x=0-centered) jar the
-  // keycap was on when it hit — the two wall colliders sit far enough apart
-  // (x=-12/+12) that the sign of pos.x is unambiguous.
+  // Only the jar's x-axis (left/right) walls and the roaming robot's proxy
+  // body (RobotProxyBody.jsx — a kinematic collider tracking the robot's
+  // real screen position) carry the electric wall-hit effect — see
+  // ScreenJar.jsx for why the floor and z-axis walls are excluded. Left vs
+  // right is inferred from which side of the (x=0-centered) jar the keycap
+  // was on when it hit — the wall colliders sit far enough apart that the
+  // sign of pos.x is unambiguous (meaningless for the robot-proxy case, but
+  // harmless since the consumer only reads `position`).
   const handleCollisionEnter = ({ other }) => {
-    if (other.colliderObject?.name !== 'jar-wall-x') return;
+    const name = other.colliderObject?.name;
+    if (name !== 'jar-wall-x' && name !== 'robot-proxy') return;
     const pos = rigidBodyRef.current?.translation();
     if (!pos) return;
     onWallHit?.({ side: pos.x < 0 ? 'left' : 'right', position: [pos.x, pos.y, pos.z] });
