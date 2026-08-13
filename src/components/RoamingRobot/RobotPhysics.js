@@ -1,5 +1,30 @@
 import { createNoise2D } from 'simplex-noise';
 
+// Longer chat messages read as a wall of text in a small speech bubble, so
+// they're shown as a sequence of shorter chunks instead — split on word
+// boundaries so a chunk never cuts a word in half.
+const CHAT_CHUNK_MAX_LEN = 80;
+const CHAT_CHUNK_DURATION = 3; // seconds each chunk stays visible before auto-advancing
+
+function splitMessageIntoChunks(text, maxLen = CHAT_CHUNK_MAX_LEN) {
+  if (text.length <= maxLen) return [text];
+
+  const words = text.split(' ');
+  const chunks = [];
+  let current = '';
+  for (const word of words) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (candidate.length > maxLen && current) {
+      chunks.push(current);
+      current = word;
+    } else {
+      current = candidate;
+    }
+  }
+  if (current) chunks.push(current);
+  return chunks;
+}
+
 // Kept well inside ±1 NDC so the robot is always fully on-screen — it
 // bounces off these like walls rather than exiting and wrapping. Exported
 // (along with depthConfinement/computeDynamicBounds below) so the renderer
@@ -60,6 +85,12 @@ export class RobotPhysics {
     this.maxSpeed = 0.016;
     this.depthConfinement = DEPTH_CONFINEMENT;
 
+    // Which way the robot is facing (yaw, radians) — updated from velocity
+    // in update() below, but only past facingMinSpeed so it holds its last
+    // heading instead of snapping/jittering toward 0 while nearly still.
+    this.facingAngle = 0;
+    this.facingMinSpeed = this.maxSpeed * 0.08;
+
     // Wall bounces are damped harder than a plain boundary clamp so the
     // robot settles at the edge instead of oscillating back into it.
     this.wallBounce = 0.3;
@@ -92,6 +123,27 @@ export class RobotPhysics {
 
     this.noiseTime = Math.random() * 1000;
     this.noise2D = createNoise2D();
+
+    // A speech-bubble message the renderer can display above the robot's
+    // head. Long messages are queued as multiple chunks (see setMessage),
+    // each shown for CHAT_CHUNK_DURATION before auto-advancing to the next.
+    this.chatMessageQueue = [];
+    this.chatMessage = null;
+    this.chatMessageTime = 0;
+    // Bumped on every chunk change so the renderer can key its entrance
+    // animation off it even when two chunks happen to share the same text.
+    this.chatMessageId = 0;
+  }
+
+  setMessage(text) {
+    this.chatMessageQueue = splitMessageIntoChunks(text);
+    this._advanceChatQueue();
+  }
+
+  _advanceChatQueue() {
+    this.chatMessage = this.chatMessageQueue.shift() ?? null;
+    this.chatMessageTime = 0;
+    this.chatMessageId += 1;
   }
 
   updateRoaming(deltaTime, step) {
@@ -192,6 +244,13 @@ export class RobotPhysics {
     this.keycaps = keycaps;
     this.wallCollisionEvents = [];
 
+    if (this.chatMessage) {
+      this.chatMessageTime += deltaTime;
+      if (this.chatMessageTime >= CHAT_CHUNK_DURATION) {
+        this._advanceChatQueue();
+      }
+    }
+
     if (this.state === 'firing') {
       return this.updateFiring(deltaTime);
     }
@@ -226,6 +285,14 @@ export class RobotPhysics {
       this.vel.x *= scale;
       this.vel.y *= scale;
       this.vel.z *= scale;
+    }
+
+    // -vel.z because the renderer negates z when going from this physics
+    // space to world space (see worldFromPhysics in RoamingRobot.jsx) — this
+    // keeps facingAngle in the same convention the renderer applies it in.
+    const horizSpeed = Math.hypot(this.vel.x, this.vel.z);
+    if (horizSpeed > this.facingMinSpeed) {
+      this.facingAngle = Math.atan2(this.vel.x, -this.vel.z);
     }
 
     this.pos.x += this.vel.x * step;

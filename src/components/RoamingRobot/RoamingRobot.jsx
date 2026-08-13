@@ -1,5 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Html } from '@react-three/drei';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Vector3 } from 'three';
 import RobotModel from '../ChatRobot/RobotModel';
 import RobotPhysics, { computeDynamicBounds } from './RobotPhysics';
@@ -216,9 +218,13 @@ const RoamingScene = forwardRef(function RoamingScene(_props, ref) {
   const [robotState, setRobotState] = useState('idle');
   const [wallHitEffects, setWallHitEffects] = useState([]);
   const [bulletImpacts, setBulletImpacts] = useState([]);
+  const [chatMessage, setChatMessage] = useState(null);
+  const [chatMessageId, setChatMessageId] = useState(0);
   const hitIdRef = useRef(0);
   const wallFlashRef = useRef({ left: 0, right: 0, top: 0, bottom: 0 });
   const lastPhaseRef = useRef('roaming');
+  const lastChatMessageIdRef = useRef(0);
+  const facingAngleRef = useRef(0);
   const fireCallbackRef = useRef(null);
   const fireTargetNDCRef = useRef({ x: 0, y: 0 });
   const startVecRef = useRef(new Vector3());
@@ -255,6 +261,9 @@ const RoamingScene = forwardRef(function RoamingScene(_props, ref) {
       fireTargetNDCRef.current = pixelToNDC(px, py);
       physicsRef.current.fireAt(fireTargetNDCRef.current);
     },
+    showMessage(text) {
+      physicsRef.current.setMessage(text);
+    },
   }));
 
   useFrame((state, rawDelta) => {
@@ -290,6 +299,15 @@ const RoamingScene = forwardRef(function RoamingScene(_props, ref) {
     if (phase !== lastPhaseRef.current) {
       lastPhaseRef.current = phase;
       setRobotState(phase === 'firing' ? 'firing' : phase === 'avoidance' ? 'excited' : 'idle');
+    }
+
+    facingAngleRef.current = physicsRef.current.facingAngle;
+
+    const liveChatMessageId = physicsRef.current.chatMessageId;
+    if (liveChatMessageId !== lastChatMessageIdRef.current) {
+      lastChatMessageIdRef.current = liveChatMessageId;
+      setChatMessage(physicsRef.current.chatMessage);
+      setChatMessageId(liveChatMessageId);
     }
 
     if (groupRef.current) {
@@ -356,7 +374,26 @@ const RoamingScene = forwardRef(function RoamingScene(_props, ref) {
       <BoundaryWalls flashRef={wallFlashRef} bounds={robotBounds} />
       <group ref={groupRef}>
         <group scale={ROBOT_SCALE}>
-          <RobotModel robotState={robotState} gunTipRef={gunTipRef} />
+          <RobotModel robotState={robotState} gunTipRef={gunTipRef} facingAngleRef={facingAngleRef} />
+          {chatMessage && (
+            <Html position={[0, 2.2, 0]} center style={{ pointerEvents: 'none' }}>
+              <div className="relative -translate-y-full">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={chatMessageId}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.3 }}
+                    className="w-max max-w-[280px] whitespace-normal break-words rounded-md bg-[#2a2a2a] px-3.5 py-1.5 text-left text-sm leading-[1.4] text-white shadow-lg"
+                  >
+                    {chatMessage}
+                  </motion.div>
+                </AnimatePresence>
+                <div className="absolute left-1/2 top-full h-3 w-3 -translate-x-1/2 -translate-y-1/2 rotate-45 bg-[#2a2a2a]" />
+              </div>
+            </Html>
+          )}
         </group>
       </group>
       <mesh ref={bulletRef} visible={false}>
@@ -403,6 +440,9 @@ const RoamingRobot = forwardRef(function RoamingRobot(_, ref) {
         return;
       }
       sceneRef.current.fireLaserAt(px, py, onHit);
+    },
+    showMessage(text) {
+      sceneRef.current?.showMessage(text);
     },
   }));
 

@@ -54,7 +54,15 @@ function MessageBubble({
   const isSpeaking = speakingMessageId === message.id;
 
   return (
-    <div className={`flex ${isGuest ? 'justify-end' : 'justify-start'}`}>
+    <div className={`flex ${isGuest ? 'justify-end' : 'justify-start items-start gap-2'}`}>
+      {!isGuest && (
+        <div
+          className="w-5 h-5 rounded-full bg-accent flex items-center justify-center text-[11px] shrink-0 mt-0.5"
+          aria-hidden="true"
+        >
+          🤖
+        </div>
+      )}
       <div className={`max-w-[80%] ${isGuest ? 'items-end' : 'items-start'} flex flex-col`}>
         <div
           className={`rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${

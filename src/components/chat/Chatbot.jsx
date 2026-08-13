@@ -45,7 +45,7 @@ function emptyContext() {
   return { faqMatches: [], questionsAsked: [], answersGiven: [], selectedOptions: {} };
 }
 
-export default function Chatbot({ onRequestOpen }) {
+export default function Chatbot({ onRequestOpen, onMessageSent }) {
   const { goToPage } = usePageNav();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -202,7 +202,10 @@ export default function Chatbot({ onRequestOpen }) {
     synthesis.isSupported,
   ]);
 
-  const appendMessage = (msg) => setMessages((prev) => [...prev, msg]);
+  const appendMessage = (msg) => {
+    setMessages((prev) => [...prev, msg]);
+    onMessageSent?.(stripMarkdown(msg.content), msg.role);
+  };
 
   const resetInactivityTimers = () => {
     clearTimeout(warningTimerRef.current);

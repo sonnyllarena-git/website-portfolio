@@ -64,6 +64,11 @@ function App() {
     roamingRobotRef.current?.fireLaserAt(px, py, openNow);
   };
 
+  const handleChatMessageSent = (text, role) => {
+    if (role !== 'bot') return;
+    roamingRobotRef.current?.showMessage(text);
+  };
+
   return (
     <ThemeProvider>
       <PageNavProvider>
@@ -81,7 +86,7 @@ function App() {
                 </main>
                 <Footer />
                 <RoamingRobot ref={roamingRobotRef} />
-                <Chatbot onRequestOpen={handleRequestOpen} />
+                <Chatbot onRequestOpen={handleRequestOpen} onMessageSent={handleChatMessageSent} />
               </div>
             </BrowserRouter>
           </RobotPositionProvider>

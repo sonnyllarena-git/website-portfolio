@@ -3,8 +3,22 @@ import { useFrame } from '@react-three/fiber';
 import { RoundedBox, Sphere, Torus, Capsule } from '@react-three/drei';
 import * as THREE from 'three';
 
+// THREE.MathUtils.damp interpolates current/target linearly, so a target
+// crossing the +-PI wrap (e.g. 3.13 -> -3.13) would spin the long way around
+// instead of the short way. This takes the shortest angular path first.
+function dampAngle(current, target, lambda, dt) {
+  const twoPi = Math.PI * 2;
+  let delta = (target - current) % twoPi;
+  if (delta > Math.PI) delta -= twoPi;
+  else if (delta < -Math.PI) delta += twoPi;
+  return current + delta * (1 - Math.exp(-lambda * dt));
+}
+
 // robotState: 'idle' | 'excited' | 'firing'
-const RobotModel = ({ robotState = 'idle', cursorPosition = null, gunTipRef = null }) => {
+// facingAngleRef: optional ref to a live yaw (radians) the idle pose turns
+// to face — used by the roaming robot so it turns to face its direction of
+// travel instead of always facing the camera.
+const RobotModel = ({ robotState = 'idle', cursorPosition = null, gunTipRef = null, facingAngleRef = null }) => {
   const rootRef = useRef();
   const headRef = useRef();
   const bodyRef = useRef();
@@ -129,7 +143,8 @@ const RobotModel = ({ robotState = 'idle', cursorPosition = null, gunTipRef = nu
         if (rootRef.current) {
           rootRef.current.position.y = Math.sin(t * 1.8) * 0.05;
           rootRef.current.rotation.x = THREE.MathUtils.damp(rootRef.current.rotation.x, 0, 6, delta);
-          rootRef.current.rotation.y = THREE.MathUtils.damp(rootRef.current.rotation.y, 0, 6, delta);
+          const targetFacing = facingAngleRef?.current ?? 0;
+          rootRef.current.rotation.y = dampAngle(rootRef.current.rotation.y, targetFacing, 6, delta);
         }
         if (headRef.current) {
           headRef.current.rotation.z = Math.sin(t * 0.8) * 0.06;
