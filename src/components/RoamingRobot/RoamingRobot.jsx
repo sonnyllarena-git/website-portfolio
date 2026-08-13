@@ -9,9 +9,12 @@ import { EYE_LEVEL_FROM_TOP } from '../../utils/perspective';
 
 const CAMERA_FOV = 50;
 const ROBOT_SCALE = 0.28;
-const BEAM_END_Z = 1.4; // near the "screen surface" so the beam reads as hitting the button
+const BEAM_END_Z = 1.4; // near the "screen surface" so the shot reads as hitting the button
 const UP_AXIS = new Vector3(0, 1, 0);
 const MAX_WALL_HIT_EFFECTS = 6; // caps runaway spawns if the robot gets pinned
+const BULLET_LAUNCH_FRACTION = 0.4; // fraction of fireHitAt spent on recoil/aim before the bullet leaves the barrel
+const BULLET_RADIUS = 0.055;
+const BULLET_TRAIL_LENGTH = 0.35; // world units — length of the tracer streak behind the bullet
 
 // The robot's layer always renders behind <main> (z-20 in App.jsx), on every
 // page — it used to swap in front of content when close enough, but that
@@ -20,15 +23,31 @@ const MAX_WALL_HIT_EFFECTS = 6; // caps runaway spawns if the robot gets pinned
 // front-most layer everywhere; Navbar/Footer/Chat stay above both regardless.
 const BEHIND_LAYER_Z = 15;
 
+// applyEyeLevelShift() below crops the taller virtual frame vertically only
+// (offsetX is always 0, view width == fullWidth) — so the camera's actual
+// horizontal frustum is never cropped back down the way the vertical one is,
+// and it scales directly off the INFLATED fov via `aspect`. Concretely: the
+// real projection's half-width at depth z works out to
+// nominalHalfHeight(z) * aspect * (fullHeight/height), i.e. the nominal
+// half-width inflated by the same factor the vertical fov was inflated by.
+// EYE_LEVEL_WIDTH_INFLATION reproduces that factor (fullHeight/height
+// reduces to this constant, independent of actual pixel dimensions) so a
+// target NDC x still round-trips through the real camera to the same value
+// — without it, worldFromPhysics under-scales x and every fired shot lands
+// short of its horizontal target (confirmed by reprojecting a computed world
+// point back through camera.project() and comparing to the intended pixel).
+const EYE_LEVEL_WIDTH_INFLATION = 2 * (1 - EYE_LEVEL_FROM_TOP);
+
 // pos.z is the model's real distance from a camera at the origin, so the
 // PerspectiveCamera's own projection gives correct "far = small" perspective
 // — no manual screen-space math needed like a 2D-canvas approach would.
-// Uses the nominal CAMERA_FOV constant rather than the live camera.fov,
-// which applyEyeLevelShift() below deliberately inflates — see its comment.
+// Uses the nominal CAMERA_FOV constant for y (matching the cropped output
+// frame — see applyEyeLevelShift), scaled by EYE_LEVEL_WIDTH_INFLATION for x
+// (which is never cropped, so it tracks the inflated fov instead).
 function worldFromPhysics(pos, camera) {
   const vFov = (CAMERA_FOV * Math.PI) / 180;
   const halfHeight = Math.tan(vFov / 2) * pos.z;
-  const halfWidth = halfHeight * camera.aspect;
+  const halfWidth = halfHeight * camera.aspect * EYE_LEVEL_WIDTH_INFLATION;
   return [pos.x * halfWidth, pos.y * halfHeight, -pos.z];
 }
 
@@ -41,9 +60,11 @@ function worldFromPhysics(pos, camera) {
 // tilt-shift/perspective-control technique architecture photographers use
 // to move a horizon without keystoning), rather than pitching the camera,
 // which would tilt verticals too. camera.fov is inflated to cover that
-// taller virtual frame — worldFromPhysics/sampleWallEdge deliberately use
-// the nominal CAMERA_FOV constant instead, since that's the true output FOV
-// once this off-center slice is taken.
+// taller virtual frame — worldFromPhysics/sampleWallEdge account for that by
+// using the nominal CAMERA_FOV for y (the true output FOV once this
+// off-center slice is taken) and EYE_LEVEL_WIDTH_INFLATION for x (which is
+// never cropped, so it stays tied to the inflated fov — see that constant's
+// comment above).
 function applyEyeLevelShift(camera, width, height) {
   if (!width || !height) return;
 
@@ -175,10 +196,12 @@ const RoamingScene = forwardRef(function RoamingScene(_props, ref) {
   const physicsRef = useRef(new RobotPhysics());
   const groupRef = useRef();
   const gunTipRef = useRef();
-  const beamRef = useRef();
+  const bulletRef = useRef();
+  const bulletTrailRef = useRef();
   const avoidanceRef = useKeycapAvoidance();
   const [robotState, setRobotState] = useState('idle');
   const [wallHitEffects, setWallHitEffects] = useState([]);
+  const [bulletImpacts, setBulletImpacts] = useState([]);
   const hitIdRef = useRef(0);
   const wallFlashRef = useRef({ left: 0, right: 0, top: 0, bottom: 0 });
   const lastPhaseRef = useRef('roaming');
@@ -187,6 +210,8 @@ const RoamingScene = forwardRef(function RoamingScene(_props, ref) {
   const startVecRef = useRef(new Vector3());
   const endVecRef = useRef(new Vector3());
   const dirVecRef = useRef(new Vector3());
+  const bulletPosVecRef = useRef(new Vector3());
+  const trailMidVecRef = useRef(new Vector3());
   const { camera, size } = useThree();
 
   useEffect(() => {
@@ -209,6 +234,10 @@ const RoamingScene = forwardRef(function RoamingScene(_props, ref) {
     if (hit?.hit) {
       fireCallbackRef.current?.();
       fireCallbackRef.current = null;
+
+      const endNDC = fireTargetNDCRef.current;
+      const impactPos = worldFromPhysics({ x: endNDC.x, y: endNDC.y, z: BEAM_END_Z }, state.camera);
+      setBulletImpacts((prev) => [...prev, { id: hitIdRef.current++, position: impactPos }]);
     }
 
     const wallHits = physicsRef.current.wallCollisionEvents;
@@ -238,17 +267,24 @@ const RoamingScene = forwardRef(function RoamingScene(_props, ref) {
       groupRef.current.position.set(x, y, z);
     }
 
-    if (!beamRef.current) return;
+    if (!bulletRef.current || !bulletTrailRef.current) return;
 
     if (phase !== 'firing' || !gunTipRef.current) {
-      beamRef.current.visible = false;
+      bulletRef.current.visible = false;
+      bulletTrailRef.current.visible = false;
       return;
     }
 
-    const { fireTimer, fireDuration, fireHitAt } = physicsRef.current;
-    const visible = fireTimer >= fireHitAt * 0.4;
-    beamRef.current.visible = visible;
-    if (!visible) return;
+    // The bullet leaves the barrel partway into the fire sequence (letting
+    // the recoil/aim pose read first), then travels start→target arriving
+    // exactly at fireHitAt — the same instant updateFiring() above reports
+    // the hit, so the chat only opens once the bullet visibly lands.
+    const { fireTimer, fireHitAt } = physicsRef.current;
+    const launchAt = fireHitAt * BULLET_LAUNCH_FRACTION;
+    const traveling = fireTimer >= launchAt && fireTimer < fireHitAt;
+    bulletRef.current.visible = traveling;
+    bulletTrailRef.current.visible = traveling;
+    if (!traveling) return;
 
     const start = startVecRef.current;
     const end = endVecRef.current;
@@ -258,16 +294,19 @@ const RoamingScene = forwardRef(function RoamingScene(_props, ref) {
     end.set(ex, ey, ez);
 
     const dir = dirVecRef.current.subVectors(end, start);
-    const length = dir.length() || 0.001;
+    const totalLength = dir.length() || 0.001;
     dir.normalize();
 
-    beamRef.current.position.copy(start).add(end).multiplyScalar(0.5);
-    beamRef.current.quaternion.setFromUnitVectors(UP_AXIS, dir);
-    beamRef.current.scale.set(1, length, 1);
+    const progress = Math.min(Math.max((fireTimer - launchAt) / (fireHitAt - launchAt), 0), 1);
+    const traveled = totalLength * progress;
+    const bulletPos = bulletPosVecRef.current.copy(start).addScaledVector(dir, traveled);
+    bulletRef.current.position.copy(bulletPos);
 
-    const fadeStart = fireDuration * 0.6;
-    beamRef.current.material.opacity =
-      fireTimer > fadeStart ? Math.max(0, 1 - (fireTimer - fadeStart) / (fireDuration - fadeStart)) : 1;
+    const trailLength = Math.min(BULLET_TRAIL_LENGTH, traveled);
+    const trailMid = trailMidVecRef.current.copy(bulletPos).addScaledVector(dir, -trailLength / 2);
+    bulletTrailRef.current.position.copy(trailMid);
+    bulletTrailRef.current.quaternion.setFromUnitVectors(UP_AXIS, dir);
+    bulletTrailRef.current.scale.set(1, trailLength, 1);
   });
 
   return (
@@ -278,9 +317,13 @@ const RoamingScene = forwardRef(function RoamingScene(_props, ref) {
           <RobotModel robotState={robotState} gunTipRef={gunTipRef} />
         </group>
       </group>
-      <mesh ref={beamRef} visible={false}>
-        <cylinderGeometry args={[0.018, 0.018, 1, 6]} />
-        <meshBasicMaterial color="#00FFFF" transparent opacity={1} toneMapped={false} />
+      <mesh ref={bulletRef} visible={false}>
+        <sphereGeometry args={[BULLET_RADIUS, 10, 10]} />
+        <meshBasicMaterial color="#00FFFF" toneMapped={false} />
+      </mesh>
+      <mesh ref={bulletTrailRef} visible={false}>
+        <cylinderGeometry args={[0.02, 0.002, 1, 6]} />
+        <meshBasicMaterial color="#00FFFF" transparent opacity={0.5} toneMapped={false} depthWrite={false} />
       </mesh>
       {wallHitEffects.map((effect) => (
         <WallCollisionEffect
@@ -289,14 +332,21 @@ const RoamingScene = forwardRef(function RoamingScene(_props, ref) {
           onExpire={() => setWallHitEffects((prev) => prev.filter((w) => w.id !== effect.id))}
         />
       ))}
+      {bulletImpacts.map((effect) => (
+        <WallCollisionEffect
+          key={effect.id}
+          position={effect.position}
+          onExpire={() => setBulletImpacts((prev) => prev.filter((b) => b.id !== effect.id))}
+        />
+      ))}
     </>
   );
 });
 
 // Persistent, full-viewport, click-through 3D layer: the robot roams the
 // current page (dodging the Home page's keycaps) and, on command, aims and
-// fires a laser at a given screen point — used to make the chat button open
-// only once the robot's shot actually lands (see App.jsx / ChatButton.jsx's
+// fires a bullet at a given screen point — used to make the chat button open
+// only once the bullet actually lands (see App.jsx / ChatButton.jsx's
 // data-chat-launcher attribute).
 const RoamingRobot = forwardRef(function RoamingRobot(_, ref) {
   const sceneRef = useRef(null);
