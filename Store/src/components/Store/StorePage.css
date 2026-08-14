@@ -1,0 +1,63 @@
+.store-page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 40px 24px;
+  color: #ffffff;
+}
+
+.store-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+}
+
+.store-title {
+  font-family: 'Courier New', monospace;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.product-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  background: rgba(20, 20, 20, 0.8);
+  border: 1px solid rgba(100, 100, 100, 0.3);
+  border-radius: 6px;
+  padding: 20px;
+}
+
+.product-name {
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.product-description {
+  font-size: 13px;
+  color: #cccccc;
+  margin-bottom: 12px;
+}
+
+.product-price {
+  font-family: 'Courier New', monospace;
+  color: #c41e3a;
+  font-size: 15px;
+}
+
+.product-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cart-button {
+  min-height: 44px;
+}

@@ -1,0 +1,63 @@
+.checkout-page {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 40px 24px;
+  color: #ffffff;
+}
+
+.checkout-processing,
+.checkout-complete {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 24px;
+  text-align: center;
+}
+
+.back-button {
+  margin-bottom: 24px;
+}
+
+.checkout-title {
+  font-family: 'Courier New', monospace;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 24px;
+}
+
+.checkout-items {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.checkout-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(100, 100, 100, 0.3);
+}
+
+.checkout-total {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'Courier New', monospace;
+  color: #c41e3a;
+  font-size: 18px;
+  margin-bottom: 32px;
+}
+
+.complete-purchase-button {
+  width: 100%;
+}
+
+.order-complete-message {
+  font-family: 'Courier New', monospace;
+  color: #00ffff;
+  font-size: 16px;
+}

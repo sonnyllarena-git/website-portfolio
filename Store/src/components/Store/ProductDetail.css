@@ -1,0 +1,38 @@
+.product-detail {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 40px 24px;
+  color: #ffffff;
+}
+
+.back-button {
+  margin-bottom: 24px;
+}
+
+.product-detail-name {
+  font-size: 22px;
+  margin-bottom: 12px;
+}
+
+.product-detail-description {
+  color: #cccccc;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.product-detail-price {
+  font-family: 'Courier New', monospace;
+  color: #c41e3a;
+  font-size: 20px;
+  margin-bottom: 24px;
+}
+
+.product-detail-actions {
+  display: flex;
+  gap: 16px;
+}
+
+.enrolled-message {
+  font-family: 'Courier New', monospace;
+  color: #00ffff;
+}
