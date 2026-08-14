@@ -48,6 +48,33 @@ body {
   }
 
   /*
+    Lets mouse moves over the page content's dead space (margins, plain
+    text, decorative wrappers) fall through to the hologram canvas behind
+    it, so its raycaster can track the cursor everywhere except where a
+    real control or CSS-hover glow lives. Those opt back in explicitly.
+  */
+  .page-content-layer,
+  .page-content-layer * {
+    pointer-events: none;
+  }
+  .page-content-layer a,
+  .page-content-layer button,
+  .page-content-layer input,
+  .page-content-layer textarea,
+  .page-content-layer select,
+  .page-content-layer [role='button'],
+  .page-content-layer [tabindex],
+  .page-content-layer .card-hover,
+  .page-content-layer .profile-neon,
+  .page-content-layer .skill-neon,
+  .page-content-layer .form-neon,
+  .page-content-layer .project-card-neon,
+  .page-content-layer .email-reveal-neon,
+  .page-content-layer .pointer-events-auto {
+    pointer-events: auto;
+  }
+
+  /*
     Neon rings use a 0-blur box-shadow (not the border property) so they
     never fight Tailwind's border-color utilities (utilities layer always
     beats this components layer) and never shift layout on hover.

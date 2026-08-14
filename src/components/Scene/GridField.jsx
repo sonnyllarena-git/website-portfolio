@@ -4,8 +4,11 @@ import * as THREE from 'three';
 import { createNoise3D } from 'simplex-noise';
 
 const VERTEX_SHADER = `
-  uniform vec2 uMouse;
+  uniform vec3 uPointer;
   uniform float uTime;
+  uniform float uHoverStrength;
+  uniform float uSpeedBoost;
+  uniform float uSquish;
   varying float vGlow;
 
   vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
@@ -74,28 +77,41 @@ const VERTEX_SHADER = `
   }
 
   void main() {
-    float dist = distance(position.xy, uMouse);
-    float radius = 4.5;
-    vGlow = smoothstep(radius, 0.0, dist);
+    float distToPointer = distance(position, uPointer);
 
+    // Ambient hologram flicker/wobble — always active, independent of the cursor.
     vec3 flow = position * 0.22 + vec3(0.0, 0.0, uTime * 0.12);
     float wobble = snoise(flow) * 0.85 + snoise(flow * 1.9 + 11.3) * 0.35;
+
+    // Jelly touch response: the surface presses inward right at the cursor
+    // (uSquish is a spring value that overshoots/jiggles on release, not a
+    // plain fade) with a ring of fluid ripple spreading outward from it.
+    float squishFalloff = smoothstep(3.2, 0.0, distToPointer);
+    float indent = -squishFalloff * uSquish * 0.85;
+    float jiggle = sin(distToPointer * 6.0 - uTime * 9.0) * squishFalloff * uSquish * (0.16 + uSpeedBoost * 0.25);
+
     vec3 dir = normalize(position + 0.0001);
-    vec3 squished = position + dir * wobble * 0.32;
+    vec3 squished = position + dir * (wobble * 0.32 + indent + jiggle);
+
+    float glowRadius = 4.2;
+    vGlow = smoothstep(glowRadius, 0.0, distToPointer) * uHoverStrength;
 
     gl_Position = projectionMatrix * modelViewMatrix * vec4(squished, 1.0);
   }
 `;
 
 const FRAGMENT_SHADER = `
+  uniform float uOpacity;
   varying float vGlow;
 
   void main() {
     vec3 basePurple = vec3(0.32, 0.13, 0.6);
     vec3 hotColor = vec3(0.95, 0.35, 0.85);
-    vec3 color = mix(basePurple, hotColor, vGlow);
+    // Toned down so the cursor spotlight accentuates the wireframe rather
+    // than blowing it out once bloom picks it up.
+    vec3 color = mix(basePurple, hotColor, vGlow * 0.65);
 
-    float alpha = 0.12 + vGlow * 0.8;
+    float alpha = (0.12 + vGlow * 0.5) * uOpacity;
     gl_FragColor = vec4(color, alpha);
   }
 `;
@@ -120,44 +136,109 @@ function buildKnotWireframe() {
     );
   }
   posAttr.needsUpdate = true;
+  knot.computeBoundingSphere();
 
   return new THREE.WireframeGeometry(knot);
 }
 
+const NEUTRAL_Z = -3;
+const SPRING_STIFFNESS = 120; // how fast the jelly presses in on touch
+const SPRING_DAMPING = 6; // low relative to stiffness so it overshoots/jiggles on release
+const FAR_POINTER = new THREE.Vector3(9999, 9999, 9999);
+
 export default function GridField() {
+  const groupRef = useRef(null);
   const meshRef = useRef(null);
+  const proxyRef = useRef(null);
+  const hoverStrengthRef = useRef(0);
+  const pressRef = useRef(0);
+  const pressVelocityRef = useRef(0);
+  const pointerLocalRef = useRef(FAR_POINTER.clone());
+  const raycasterRef = useRef(null);
+  if (!raycasterRef.current) raycasterRef.current = new THREE.Raycaster();
+
   const uniforms = useRef({
-    uMouse: { value: new THREE.Vector2(999, 999) },
+    uPointer: { value: FAR_POINTER.clone() },
     uTime: { value: 0 },
+    uHoverStrength: { value: 0 },
+    uSpeedBoost: { value: 0 },
+    uSquish: { value: 0 },
+    uOpacity: { value: 0.8 },
   });
 
   const geometry = useMemo(buildKnotWireframe, []);
+  const proxyRadius = geometry.boundingSphere ? geometry.boundingSphere.radius * 1.15 : 5;
 
-  useFrame(({ camera, pointer, viewport, clock }, delta) => {
-    if (meshRef.current) {
-      meshRef.current.position.x = camera.position.x;
-      meshRef.current.rotation.y += delta * 0.06;
-      meshRef.current.rotation.x = Math.sin(clock.elapsedTime * 0.15) * 0.15;
-      const breathe = 1 + Math.sin(clock.elapsedTime * 0.9) * 0.035 + Math.sin(clock.elapsedTime * 1.7) * 0.015;
-      meshRef.current.scale.setScalar(breathe);
+  useFrame(({ camera, pointer, clock }, delta) => {
+    const group = groupRef.current;
+    const mesh = meshRef.current;
+    const proxy = proxyRef.current;
+    if (!group || !mesh || !proxy) return;
+
+    group.position.x = camera.position.x;
+    mesh.rotation.y += delta * 0.06;
+    mesh.rotation.x = Math.sin(clock.elapsedTime * 0.15) * 0.15;
+    group.updateMatrixWorld(true);
+
+    // Raycast directly against an invisible proxy sphere (the wireframe
+    // knot's own thin lines are unreliable to hit-test precisely) so the
+    // cursor position used below always matches what the pointer is really
+    // touching on the hologram.
+    raycasterRef.current.setFromCamera(pointer, camera);
+    const hit = raycasterRef.current.intersectObject(proxy, false)[0];
+
+    let targetHover = 0;
+    let speed = 0;
+    if (hit) {
+      const localHit = mesh.worldToLocal(hit.point.clone());
+      speed = localHit.distanceTo(pointerLocalRef.current) / Math.max(delta, 0.001);
+      pointerLocalRef.current.copy(localHit);
+      targetHover = 1;
     }
-    uniforms.current.uMouse.value.set(
-      (pointer.x * viewport.width) / 2,
-      (pointer.y * viewport.height) / 2
-    );
+
+    // Ease in quickly on approach, ease out slowly on leave — a lerp back to
+    // the neutral resting state instead of an abrupt cut. This drives the
+    // cursor spotlight/glow, kept smooth and separate from the jelly spring
+    // below so the lighting never jiggles with the geometry.
+    const hoverRate = targetHover > hoverStrengthRef.current ? 0.12 : 0.045;
+    hoverStrengthRef.current = THREE.MathUtils.lerp(hoverStrengthRef.current, targetHover, hoverRate);
+
+    // Jelly spring: presses in on touch and overshoots/jiggles back to rest
+    // on release, like squishing then letting go of gel, instead of a plain
+    // scale up/down.
+    const springForce = (targetHover - pressRef.current) * SPRING_STIFFNESS - pressVelocityRef.current * SPRING_DAMPING;
+    pressVelocityRef.current += springForce * delta;
+    pressRef.current += pressVelocityRef.current * delta;
+
+    const breathe = 1 + Math.sin(clock.elapsedTime * 0.9) * 0.035 + Math.sin(clock.elapsedTime * 1.7) * 0.015;
+    mesh.scale.setScalar(breathe);
+
+    uniforms.current.uPointer.value.copy(pointerLocalRef.current);
+    uniforms.current.uHoverStrength.value = hoverStrengthRef.current;
+    uniforms.current.uSquish.value = pressRef.current;
+    uniforms.current.uSpeedBoost.value = THREE.MathUtils.clamp(speed / 12, 0, 1.5);
     uniforms.current.uTime.value = clock.elapsedTime;
   });
 
   return (
-    <lineSegments ref={meshRef} geometry={geometry} position={[0, 0.5, -3]}>
-      <shaderMaterial
-        vertexShader={VERTEX_SHADER}
-        fragmentShader={FRAGMENT_SHADER}
-        uniforms={uniforms.current}
-        transparent
-        depthWrite={false}
-        blending={THREE.AdditiveBlending}
-      />
-    </lineSegments>
+    <group ref={groupRef} position={[0, 0.5, NEUTRAL_Z]}>
+      <lineSegments ref={meshRef} geometry={geometry}>
+        <shaderMaterial
+          vertexShader={VERTEX_SHADER}
+          fragmentShader={FRAGMENT_SHADER}
+          uniforms={uniforms.current}
+          transparent
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
+      </lineSegments>
+      {/* Invisible interaction proxy — a stable bounding sphere the raycaster
+          can hit precisely, kept separate from the mesh above so its radius
+          doesn't wobble with the breathing/hover scale animation. */}
+      <mesh ref={proxyRef}>
+        <sphereGeometry args={[proxyRadius, 16, 16]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      </mesh>
+    </group>
   );
 }

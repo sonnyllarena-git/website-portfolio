@@ -81,7 +81,7 @@ export default function SceneCanvas() {
       {!reduced && <Glitter />}
       {!reduced && (
         <EffectComposer>
-          <Bloom mipmapBlur luminanceThreshold={0.15} luminanceSmoothing={0.4} intensity={0.9} />
+          <Bloom mipmapBlur luminanceThreshold={0.25} luminanceSmoothing={0.4} intensity={0.5} />
         </EffectComposer>
       )}
       <CameraRig pageIndex={pageIndex} reduced={reduced} onArrive={handleArrive} />
@@ -96,7 +96,14 @@ export default function SceneCanvas() {
           pointerEvents: visible ? 'auto' : 'none',
         }}
       >
-        <div className="h-screen w-screen overflow-y-auto pb-10">
+        {/* pointer-events pass-through so mouse moves over dead space in the
+            page content still reach the hologram's raycaster below —
+            interactive elements opt back in via .page-content-layer's rules */}
+        <div
+          className={`h-screen w-screen overflow-y-auto pb-10 ${
+            visible && !reduced ? 'page-content-layer' : ''
+          }`}
+        >
           <DisplayedComponent />
         </div>
       </Html>
