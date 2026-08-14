@@ -16,7 +16,7 @@ export const KeycapHoverContext = createContext(null);
 const MAX_DRAG_SPEED = 40;
 const clamp = (v, max) => Math.max(-max, Math.min(max, v));
 
-const KeyCap = ({ position, rotation, item, id, onWallHit }) => {
+const KeyCap = ({ position, rotation, item, id, onWallHit, floating = false }) => {
   const rigidBodyRef = useRef();
   const [isDragging, setIsDragging] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -118,6 +118,25 @@ const KeyCap = ({ position, rotation, item, id, onWallHit }) => {
     avoidanceRef.current[id] = { x: avoidanceVectorRef.current.x, y: avoidanceVectorRef.current.y };
   });
 
+  // Backward navigation switches settled keycaps from falling to a gentle
+  // drift instead of a fresh drop — dampens existing velocity each frame and
+  // adds a small phase-offset sinusoidal force (offset by `id` so keycaps
+  // don't all drift in lockstep), with a slight upward bias so they rise
+  // and float rather than just idling in place.
+  useFrame((state) => {
+    if (!floating || isDragging || !rigidBodyRef.current) return;
+    const t = state.clock.elapsedTime + (id ?? 0) * 1.7;
+    const vel = rigidBodyRef.current.linvel();
+    rigidBodyRef.current.setLinvel(
+      {
+        x: vel.x * 0.9 + Math.sin(t * 0.6) * 0.004,
+        y: vel.y * 0.9 + Math.cos(t * 0.5) * 0.004 + 0.002,
+        z: vel.z * 0.9,
+      },
+      true
+    );
+  });
+
   const textColor = item.color === '#FF6B00' ? '#FFFFFF' : '#FF6B00';
 
   return (
@@ -130,6 +149,7 @@ const KeyCap = ({ position, rotation, item, id, onWallHit }) => {
       friction={0.3}
       linearDamping={0.5}
       angularDamping={0.5}
+      gravityScale={floating ? 0 : 1}
       onCollisionEnter={handleCollisionEnter}
     >
       <group
@@ -139,7 +159,7 @@ const KeyCap = ({ position, rotation, item, id, onWallHit }) => {
         onPointerEnter={handlePointerEnter}
         onPointerLeave={handlePointerLeave}
       >
-        <RoundedBox args={[0.85, 0.65, 0.85]} radius={0.12} smoothness={6} castShadow receiveShadow>
+        <RoundedBox args={[0.85, 0.65, 0.85]} radius={0.12} smoothness={6}>
           <meshPhysicalMaterial
             color={item.color}
             emissive={hovered ? '#ffffff' : '#000000'}

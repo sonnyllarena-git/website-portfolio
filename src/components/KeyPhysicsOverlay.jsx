@@ -189,7 +189,7 @@ function JarFloor({ arena }) {
 
   return (
     <>
-      <mesh position={[centerX, floorY, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+      <mesh position={[centerX, floorY, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[width, 16]} />
         <meshStandardMaterial color="#1a1a1a" transparent opacity={0.22} />
       </mesh>
@@ -201,7 +201,7 @@ function JarFloor({ arena }) {
 // Decorative physics background: every skill keycap drops in from above the
 // frame and settles at the bottom. Skipped on mobile (perf) and when the
 // user prefers reduced motion.
-const KeyPhysicsOverlay = () => {
+const KeyPhysicsOverlay = ({ floating = false }) => {
   const [skip] = useState(
     () => window.innerWidth < 768 || window.matchMedia('(prefers-reduced-motion: reduce)').matches
   );
@@ -246,24 +246,13 @@ const KeyPhysicsOverlay = () => {
     <div className="absolute inset-0 z-0">
       <KeycapHoverContext.Provider value={hoverRef}>
         <Canvas
-          shadows
           camera={{ position: [0, 0, 16], fov: 55 }}
           gl={{ antialias: true, alpha: true }}
           style={{ background: 'transparent' }}
         >
           <ambientLight intensity={0.5} />
-          <directionalLight
-            position={[10, 15, 10]}
-            intensity={2.5}
-            castShadow
-            shadow-mapSize-width={1024}
-            shadow-mapSize-height={1024}
-            shadow-camera-left={-16}
-            shadow-camera-right={16}
-            shadow-camera-top={16}
-            shadow-camera-bottom={-16}
-          />
-          <pointLight position={[-10, -10, -10]} color="#FF6B00" intensity={0.5} />
+          <directionalLight position={[10, 15, 10]} intensity={2.5} />
+          <pointLight position={[-10, -10, -10]} color="#FF4D4D" intensity={0.5} />
           <pointLight position={[10, 10, 10]} color="#ffffff" intensity={0.3} />
 
           <JarFloor arena={arena} />
@@ -280,6 +269,7 @@ const KeyPhysicsOverlay = () => {
                   rotation={k.rotation}
                   item={k.item}
                   onWallHit={handleWallHit}
+                  floating={floating}
                 />
               ))}
               {wallHitEffects.map((effect) => (

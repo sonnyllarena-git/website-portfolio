@@ -76,7 +76,7 @@ export default function Contact() {
     try {
       await sendContactMessage(form);
       setStatus('success');
-      setStatusMessage("Message sent! I'll get back to you soon.");
+      setStatusMessage("Message sent! We'll get back to you soon.");
       setForm(initialForm);
     } catch (err) {
       setStatus('error');
@@ -97,14 +97,14 @@ export default function Contact() {
           transition={{ duration: 0.6, ease: 'easeOut' }}
         >
           <h2 className="section-heading text-4xl md:text-5xl font-black mb-8">
-            Contact <span className="text-accent">Me.</span>
+            Book a <span className="text-accent">Consultation.</span>
           </h2>
 
           <p className="text-black/70 dark:text-white/70 leading-relaxed mb-4">
-            I read every email and will get back to you within 24 hours.
+            Tell us about your project and we'll get back to you within 24 hours — whether that's a free consultation, a live demo, or just a quick message.
           </p>
           <p className="text-sm text-black/50 dark:text-white/50 mb-10">
-            Just leave your name and email address—I’ll only use it to reply to your message, with no spam ever.
+            Just leave your name and email address—we’ll only use it to reply to your message, with no spam ever.
           </p>
 
           <div className="w-24 h-1.5 bg-accent rounded-full mb-10" />
@@ -135,7 +135,7 @@ export default function Contact() {
         >
           <div className="form-neon bg-bg-dark rounded-2xl p-8 md:p-10">
             <h3 className="text-2xl font-bold text-white mb-6">
-              Send Me A Message
+              Request a Consultation or Demo
             </h3>
 
             <form onSubmit={handleSubmit} className="space-y-5" noValidate>
@@ -216,7 +216,7 @@ export default function Contact() {
                 ) : (
                   <>
                     <FiSend />
-                    Send Message
+                    Message Us
                   </>
                 )}
               </button>

@@ -22,7 +22,7 @@ export default function NavigationDots({ projects, currentProject, onSelect }) {
             <span
               className={`shrink-0 rounded-full transition-all duration-300 ease-in-out ${
                 index === currentProject
-                  ? 'w-1.5 h-9 bg-accent shadow-[0_0_10px_rgba(255,107,53,0.5)]'
+                  ? 'w-1.5 h-9 bg-accent shadow-[0_0_10px_rgba(255,77,77,0.5)]'
                   : 'w-1.5 h-5 bg-black/20 dark:bg-white/20 hover:bg-accent/60 hover:h-6'
               }`}
             />

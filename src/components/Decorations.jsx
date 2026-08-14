@@ -12,7 +12,7 @@ export function CurvedLine({ className = '' }) {
     >
       <motion.path
         d="M10 200C60 120 120 40 210 10"
-        stroke="#FF6B35"
+        stroke="#FF4D4D"
         strokeWidth="2"
         strokeLinecap="round"
         strokeDasharray="1000"

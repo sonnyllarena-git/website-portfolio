@@ -1,9 +1,7 @@
-import { lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { PROFILE, SOCIAL_LINKS } from '../utils/constants';
 import { CurvedLine, OrangeSquare } from './Decorations';
-
-const KeyPhysicsOverlay = lazy(() => import('./KeyPhysicsOverlay'));
+import GlitchText from './GlitchText';
 
 export default function Hero() {
   return (
@@ -11,10 +9,6 @@ export default function Hero() {
       id="home"
       className="relative min-h-screen flex items-center pt-24 pb-16 overflow-hidden"
     >
-      <Suspense fallback={null}>
-        <KeyPhysicsOverlay />
-      </Suspense>
-
       <CurvedLine className="hidden lg:block absolute top-24 right-10 opacity-70" />
       <OrangeSquare className="hidden lg:block absolute top-40 left-16" size={18} delay={0.3} />
       <OrangeSquare className="hidden lg:block absolute bottom-32 right-1/3" size={12} delay={0.6} />
@@ -52,10 +46,12 @@ export default function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7 }}
         >
-          <p className="text-accent font-semibold mb-3 tracking-wide">Hello, I'm</p>
-          <h1 className="text-6xl md:text-7xl font-black leading-none mb-4">
-            {PROFILE.name}
-          </h1>
+          <p className="text-accent font-semibold mb-3 tracking-wide">Welcome to</p>
+          <GlitchText
+            as="h1"
+            text={PROFILE.studioName}
+            className="text-5xl md:text-6xl font-black leading-tight mb-4"
+          />
           <p className="text-lg md:text-xl text-black/70 dark:text-white/70 max-w-md">
             {PROFILE.title}
           </p>

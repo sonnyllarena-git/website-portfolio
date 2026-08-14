@@ -33,11 +33,12 @@ import onboardingAppImage from '../assets/logo/onboarding-app.jpg';
 
 export const PROFILE = {
   name: 'Sonny',
-  title: 'Full Stack Developer, IT Specialist, Automations, Social Media Manager',
+  studioName: 'Sonny Tech Studio',
+  title: 'Full-stack development, IT systems, and automation — built and supported by a small, senior team.',
   email: 'sonnyl@thecreditpros.com',
   github: 'https://github.com/sonnyllarena-git',
   bio:
-    "As a full-stack developer and IT specialist, I design production software, automate complex business processes, and maintain the infrastructure that powers daily operations. Beyond engineering, I produce and manage social content with a mix of technical rigor and creative direction. My goal is simple: create fast, reliable, and high-impact solutions—from smart automations and clean code to engaging media.",
+    'Sonny Tech Studio designs production software, automates complex business processes, and maintains the infrastructure that powers daily operations for the teams we work with. We produce and manage social content with a mix of technical rigor and creative direction. Our goal is simple: fast, reliable, high-impact solutions — from smart automations and clean code to engaging media.',
   skillsAreList: [
     'React & React Native',
     'Node.js & Express',
@@ -59,8 +60,9 @@ export const NAV_LINKS = [
   { name: 'Home', to: 'home' },
   { name: 'About', to: 'about' },
   { name: 'Projects', to: 'projects' },
-  { name: 'Skills', to: 'skills' },
-  { name: 'Learning', to: 'learning' },
+  { name: 'Tech Stack', to: 'techStack' },
+  { name: 'Blog', to: 'blog' },
+  { name: 'What They Say', to: 'testimonials' },
   { name: 'Contact', to: 'contact' },
 ];
 

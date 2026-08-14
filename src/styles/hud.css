@@ -1,0 +1,224 @@
+/* Daoism-style HUD component classes: entry gate, glitch text, ruler nav, audio meter. */
+
+.glitch-text {
+  position: relative;
+  display: inline-block;
+  color: #ffffff;
+}
+
+.glitch-text::before,
+.glitch-text::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.glitch-text::before {
+  color: #ff4d4d;
+  transform: translate(-2px, -1px);
+  opacity: 0.6;
+}
+
+.glitch-text::after {
+  color: #00e5ff;
+  transform: translate(2px, 1px);
+  opacity: 0.6;
+}
+
+.glitch-text.glitch-animated::before {
+  animation: glitch-jitter-before 3.4s infinite steps(2, end);
+}
+.glitch-text.glitch-animated::after {
+  animation: glitch-jitter-after 3.4s infinite steps(2, end);
+}
+
+.glitch-text.intensity-low::before {
+  transform: translate(-1px, -0.5px);
+}
+.glitch-text.intensity-low::after {
+  transform: translate(1px, 0.5px);
+}
+
+.glitch-text.intensity-high::before {
+  transform: translate(-3px, -2px);
+}
+.glitch-text.intensity-high::after {
+  transform: translate(3px, 2px);
+}
+.glitch-text.intensity-high.glitch-animated::before,
+.glitch-text.intensity-high.glitch-animated::after {
+  animation-duration: 1.8s;
+}
+
+@keyframes glitch-jitter-before {
+  0%, 92%, 100% { transform: translate(-2px, -1px); opacity: 0.6; }
+  93% { transform: translate(-6px, 1px); opacity: 0.9; }
+  95% { transform: translate(-1px, -3px); opacity: 0.4; }
+  97% { transform: translate(-4px, 2px); opacity: 0.8; }
+}
+
+@keyframes glitch-jitter-after {
+  0%, 92%, 100% { transform: translate(2px, 1px); opacity: 0.6; }
+  93% { transform: translate(5px, -2px); opacity: 0.9; }
+  95% { transform: translate(1px, 3px); opacity: 0.4; }
+  97% { transform: translate(4px, -1px); opacity: 0.8; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glitch-text.glitch-animated::before,
+  .glitch-text.glitch-animated::after {
+    animation: none;
+  }
+}
+
+/* Entry gate */
+.entry-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000000;
+  color: #e5e5e5;
+}
+
+.entry-gate-crosshair {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+}
+.entry-gate-crosshair::before,
+.entry-gate-crosshair::after {
+  content: '';
+  position: absolute;
+  background: rgba(255, 255, 255, 0.6);
+}
+.entry-gate-crosshair::before {
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  transform: translateY(-50%);
+}
+.entry-gate-crosshair::after {
+  left: 50%;
+  top: 0;
+  width: 1px;
+  height: 100%;
+  transform: translateX(-50%);
+}
+
+.entry-gate-orbit {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  pointer-events: none;
+}
+
+.entry-gate-dots span {
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  margin: 0 2px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.5);
+  animation: entry-dot-pulse 1.4s ease-in-out infinite;
+}
+.entry-gate-dots span:nth-child(2) { animation-delay: 0.15s; }
+.entry-gate-dots span:nth-child(3) { animation-delay: 0.3s; }
+.entry-gate-dots span:nth-child(4) { animation-delay: 0.45s; }
+.entry-gate-dots span:nth-child(5) { animation-delay: 0.6s; }
+.entry-gate-dots span:nth-child(6) { animation-delay: 0.75s; }
+.entry-gate-dots span:nth-child(7) { animation-delay: 0.9s; }
+
+@keyframes entry-dot-pulse {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 1; }
+}
+
+.entry-gate-start {
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 8px 22px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 250ms ease;
+}
+.entry-gate-start:hover {
+  background: #ff4d4d;
+  border-color: #ff4d4d;
+  box-shadow: 0 0 20px rgba(255, 77, 77, 0.4);
+}
+
+/* Cursor aura glow */
+.cursor-aura-pulse {
+  animation: aura-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes aura-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.cursor-hotspot {
+  width: 5px;
+  height: 5px;
+  border-radius: 9999px;
+  background: #ffffff;
+  box-shadow: 0 0 6px 2px rgba(255, 255, 255, 0.9);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cursor-aura-pulse {
+    animation: none;
+  }
+}
+
+/* HUD ruler nav */
+.hud-ruler-tick {
+  width: 1px;
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* Audio meter */
+.audio-meter {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 12px;
+}
+.audio-meter-bar {
+  width: 2px;
+  background: #ff4d4d;
+  border-radius: 1px;
+  animation: audio-meter-bounce 900ms ease-in-out infinite;
+}
+.audio-meter-bar:nth-child(2) { animation-delay: 120ms; }
+.audio-meter-bar:nth-child(3) { animation-delay: 240ms; }
+.audio-meter-bar:nth-child(4) { animation-delay: 360ms; }
+.audio-meter-bar:nth-child(5) { animation-delay: 480ms; }
+
+@keyframes audio-meter-bounce {
+  0%, 100% { height: 3px; }
+  50% { height: 12px; }
+}
+
+.audio-meter.muted .audio-meter-bar {
+  animation-play-state: paused;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.3);
+}

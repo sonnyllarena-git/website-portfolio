@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
+@import './styles/hud.css';
 
 @tailwind base;
 @tailwind components;
@@ -15,17 +16,12 @@ body {
 }
 
 body {
-  font-family: 'Inter', system-ui, sans-serif;
-  background: linear-gradient(180deg, #F5F5F5 0%, #E5E5E5 100%);
-  color: #000000;
+  font-family: 'JetBrains Mono', ui-monospace, 'Courier New', monospace;
+  background: linear-gradient(180deg, #0d0d0d 0%, #000000 100%);
+  color: #ffffff;
   transition: color 300ms ease-in-out;
   overflow-x: hidden;
   min-height: 100vh;
-}
-
-html.dark body {
-  background: linear-gradient(180deg, #1A1A1A 0%, #0F0F0F 100%);
-  color: #FFFFFF;
 }
 
 @layer base {
@@ -61,7 +57,7 @@ html.dark body {
   }
   .project-card-neon:hover {
     transform: scale(1.03);
-    box-shadow: 0 0 20px rgba(255, 107, 53, 0.4);
+    box-shadow: 0 0 20px rgba(255, 77, 77, 0.4);
   }
 
   .profile-neon {
@@ -69,7 +65,7 @@ html.dark body {
   }
   .profile-neon:hover {
     transform: scale(1.03);
-    box-shadow: 0 0 20px rgba(255, 107, 53, 0.4);
+    box-shadow: 0 0 20px rgba(255, 77, 77, 0.4);
   }
 
   .skill-neon {
@@ -77,7 +73,7 @@ html.dark body {
   }
   .skill-neon:hover {
     transform: scale(1.03);
-    box-shadow: 0 0 20px rgba(255, 107, 53, 0.4);
+    box-shadow: 0 0 20px rgba(255, 77, 77, 0.4);
   }
 
   .skill-marquee-wrapper {
@@ -105,13 +101,13 @@ html.dark body {
     align-items: center;
     gap: 6px;
     padding: 6px 12px;
-    background: #FF6B35;
+    background: #ff4d4d;
     color: #ffffff;
     border-radius: 6px;
     font-weight: 600;
     font-size: 13px;
     flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+    box-shadow: 0 2px 8px rgba(255, 77, 77, 0.3);
   }
 
   .form-neon {
@@ -119,7 +115,7 @@ html.dark body {
   }
   .form-neon:hover {
     transform: scale(1.03);
-    box-shadow: 0 0 20px rgba(255, 107, 53, 0.4);
+    box-shadow: 0 0 20px rgba(255, 77, 77, 0.4);
   }
 
   .email-reveal-neon {
@@ -127,7 +123,7 @@ html.dark body {
   }
   .email-reveal-neon:hover {
     transform: scale(1.03);
-    box-shadow: 0 0 20px rgba(255, 107, 53, 0.4);
+    box-shadow: 0 0 20px rgba(255, 77, 77, 0.4);
   }
 
   .project-github-neon {
@@ -135,22 +131,22 @@ html.dark body {
   }
   .project-github-neon:hover {
     transform: scale(1.03);
-    box-shadow: 0 0 20px rgba(255, 107, 53, 0.4);
+    box-shadow: 0 0 20px rgba(255, 77, 77, 0.4);
   }
 
   .chat-button-hover {
-    background: linear-gradient(135deg, #FF6B35 0%, #E85A1F 100%);
+    background: linear-gradient(135deg, #ff4d4d 0%, #cc2e2e 100%);
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
     transition: transform 300ms ease-in-out, box-shadow 300ms ease-in-out;
   }
   .chat-button-hover:hover {
     transform: scale(1.1);
-    box-shadow: 0 0 24px rgba(255, 107, 53, 0.6);
+    box-shadow: 0 0 24px rgba(255, 77, 77, 0.6);
   }
 
   .chat-window-glow {
-    border: 1px solid rgba(255, 107, 53, 0.4);
-    box-shadow: 0 0 30px rgba(255, 107, 53, 0.15), 0 20px 40px rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(255, 77, 77, 0.4);
+    box-shadow: 0 0 30px rgba(255, 77, 77, 0.15), 0 20px 40px rgba(0, 0, 0, 0.15);
   }
 
   .mic-recording {
@@ -161,7 +157,7 @@ html.dark body {
     width: 6px;
     height: 6px;
     border-radius: 9999px;
-    background: #FF6B35;
+    background: #ff4d4d;
     display: inline-block;
     animation: listening-blink 1s ease-in-out infinite;
   }
@@ -234,7 +230,7 @@ html.dark body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #FF6B35;
+  background: #ff4d4d;
   border-radius: 8px;
 }
 

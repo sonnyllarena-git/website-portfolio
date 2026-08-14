@@ -36,7 +36,7 @@ export default function LogoStack({ projects, currentProject, onSelect }) {
             style={{ zIndex: total - layer }}
             className={`group absolute inset-0 rounded-2xl overflow-hidden shadow-2xl transition-[filter] duration-300 ease-in-out ${
               isFront
-                ? 'cursor-default hover:drop-shadow-[0_0_6px_rgba(255,107,53,0.6)]'
+                ? 'cursor-default hover:drop-shadow-[0_0_6px_rgba(255,77,77,0.6)]'
                 : 'cursor-pointer'
             }`}
           >

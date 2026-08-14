@@ -42,14 +42,14 @@ export default function About() {
           transition={{ duration: 0.6, ease: 'easeOut' }}
         >
           <h2 className="section-heading text-4xl md:text-5xl font-black mb-8">
-            About Me.
+            About the <span className="text-accent">Company.</span>
           </h2>
 
           <p className="text-black/70 dark:text-white/70 leading-relaxed mb-8">
             {PROFILE.bio}
           </p>
 
-          <h3 className="font-bold text-lg mb-4">My Skills Are:</h3>
+          <h3 className="font-bold text-lg mb-4">What We Work With:</h3>
           <motion.ul
             variants={listVariants}
             initial="hidden"

@@ -5,16 +5,17 @@ export default {
   theme: {
     extend: {
       colors: {
-        'bg-light': '#F5F5F5',
-        'bg-dark': '#1A1A1A',
+        'bg-light': '#0D0D0D',
+        'bg-dark': '#000000',
         'text-dark': '#000000',
         'text-light': '#FFFFFF',
-        accent: '#FF6B35',
-        'border-light': '#E0E0E0',
+        accent: '#FF4D4D',
+        'border-light': 'rgba(255, 255, 255, 0.1)',
         'gray-secondary': '#9CA3AF',
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['"JetBrains Mono"', 'ui-monospace', 'Consolas', 'monospace'],
+        mono: ['"JetBrains Mono"', 'ui-monospace', 'Consolas', 'monospace'],
       },
       scale: {
         102: '1.02',
